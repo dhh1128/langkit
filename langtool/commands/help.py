@@ -7,9 +7,8 @@ def cmd(args=None):
     """
 
     print("""
-tt -- Term Tool: manage terminology in CTWG process
-    https://wiki.trustoverip.org/display/HOME/Terms+Wikis
-
+langtool -- develop artifacts for artificial languages
+          
 Available commands
 """)
     # To avoid a circular import problem, we didn't load the help plugin dynamically.
@@ -20,5 +19,5 @@ Available commands
         doc = func.__doc__.strip()
         i = doc.find('-')
         syntax, doc = doc[:i].rstrip(), doc[i+1:].lstrip()
-        print("  tt %s %s\n      %s\n" % (name, syntax, doc))
+        print("  langtool %s %s\n      %s\n" % (name, syntax, doc))
 

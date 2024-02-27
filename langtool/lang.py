@@ -33,7 +33,7 @@ class Lang:
 
     @property
     def file(self):
-        return os.path.join(DEFS_FOLDER, self.name + '.json')
+        return os.path.join(DEFS_FOLDER, self.name + '.lang')
 
     def load_file(self):
         with open(self.file, 'rt') as f:
