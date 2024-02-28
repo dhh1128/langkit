@@ -2,7 +2,7 @@ from ..glossary import Glossary
 
 import os
 
-SAMPLE_GLOSS_PATH = os.path.join(os.path.dirname(__file__), 'sample-glossary.txt')
+SAMPLE_GLOSS_PATH = os.path.join(os.path.dirname(__file__), 'martian', 'glossary.txt')
 g = Glossary.load(SAMPLE_GLOSS_PATH)
 
 def test_load():

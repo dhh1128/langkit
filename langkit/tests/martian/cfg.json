@@ -1,0 +1,5 @@
+{
+    "vowels": "eio",
+    "consonants": "spx",
+    "sylpats": ["CV", "CCV"]
+}

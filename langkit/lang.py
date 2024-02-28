@@ -1,9 +1,10 @@
 import os
 import json
 
+from .glossary import Glossary
 
-DEFS_FOLDER = os.path.normpath(os.path.join(os.path.expanduser('~'), '.langtool'))
-
+CFG_NAME = 'cfg.json'
+GLOSSARY_NAME = 'glossary.txt'
 
 def _generate_syllables(pattern, vowels, consonants):
     i = pattern.find('V')
@@ -22,42 +23,37 @@ def _generate_syllables(pattern, vowels, consonants):
 
 
 class Lang:
-    def __init__(self, name, data=None):
-        self.name = name
-        self.folder = os.path.join(DEFS_FOLDER, name)
-        self.raw = {}
-        if data:
-            self.load_data(data)
+    def __init__(self, path):
+        self.path = os.path.normpath(os.path.abspath(path))
+        self.name = os.path.split(self.path)[1]
+        self._syl = None
+        if os.path.isfile(self.cfg_path):
+            with open(self.cfg_path, 'rt') as f:
+                self.cfg = json.loads(f.read())
         else:
-            self.load_file()
+            self.cfg = {}
+        if os.path.isfile(self.gloss_path):
+            self.glossary = Glossary.load(self.gloss_path)
 
     @property
-    def file(self):
-        return os.path.join(DEFS_FOLDER, self.name + '.lang')
+    def cfg_path(self):
+        return os.path.join(self.path, CFG_NAME)
+    
+    @property
+    def gloss_path(self):
+        return os.path.join(self.path, GLOSSARY_NAME)
+    
+    @property
+    def sylpats(self):
+        return self.cfg.get('sylpats', ['V', 'CV'])
 
-    def load_file(self):
-        with open(self.file, 'rt') as f:
-            data = json.loads(f.read())
-        self.load_data(data)
+    @property
+    def vowels(self):
+        return self.cfg.get('vowels', ['a', 'i'])
 
-    def load_data(self, data):
-        if isinstance(data, str):
-            data = json.loads(data)
-        self.vowels = data.get('vowels', [])
-        self.consonants = data.get('consonants', [])
-        self.sylpats = data.get('sylpats', [])
-        self.dictionary = data.get('dictionary', {})
-        self._syl = None
-
-    def save(self):
-        data = {
-            "vowels": self.vowels,
-            "consonants": self.consonants,
-            "sylpats": self.syllables,
-            "dictionary": self.dictionary
-        }
-        with open(self.file, 'wt') as f:
-            f.write(json.dumps(data))
+    @property
+    def consonants(self):
+        return self.cfg.get('consonants', ['k', 't', 'm'])
 
     @property
     def syllables(self):
