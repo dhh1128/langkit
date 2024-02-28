@@ -25,5 +25,5 @@ def test_load_from_disk():
     assert len(l.sylpats) == 2
 
 def test_syllables():
-    for s in MARTIAN.syllables:
-        pass #print(s)
+    count = sum(1 for _ in MARTIAN.syllables)
+    assert count > 25
