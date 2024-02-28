@@ -24,3 +24,20 @@ def test_get_place():
 def test_get_manner():
    assert get_manner('a') is None
    assert get_manner('s') == 'fricative'
+
+def test_can_add_std():
+    def ok(a, b):
+        assert can_add_std(a, b) == True
+    def bad(a, b):
+        assert can_add_std(a, b) == False
+    ok('t', 'a')
+    ok('a', 't')
+    bad('t', 't')
+    bad('t', 'h')
+    bad('a', 'ə')
+    bad('a', 'ɒ')
+    bad('a', 'æ')
+    ok('a', 'i')
+    ok('u', 'e')
+    bad('z', 's')
+    ok('s', 'l')

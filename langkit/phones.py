@@ -130,9 +130,10 @@ def can_add_std(a, b):
             return False
         return True
     # Two consonants are trickier...
-    # Two consonants with different voicing are not allowed
-    if _is_voiced_a(a_attrib) != _is_voiced_a(b_attrib):
-        return False
+    # Voiced followed by unvoiced is not allowed
+    if _is_voiced_a(a_attrib):
+        if not _is_voiced_a(b_attrib):
+            return False
     # Glottal consonants can't be second.
     if place_b == 'glottal':
         return False
