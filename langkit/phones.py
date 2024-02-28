@@ -1,4 +1,8 @@
-inventory = {
+"""
+Phonemes defined in the IPA. This is not intended to be an exhaustive list -- just
+ones that are likely to be interesting in most language projects.
+"""
+IPA = {
     'ɑ': 'open back vowel', # back sound made while gargling
     'ɒ': 'open back rounded vowel', # the vowel emphasized in SNL's "coffee talk" skits
     'a': 'open central vowel', # spanish a, farther forward sound than 2 previous
@@ -46,10 +50,6 @@ def is_rounded(attribs):
     
 def is_vowel(attribs):
     return "vowel" in attribs
-
-def get_x(attribs):
-    if is_vowel(attribs):
-        return 
 
 def is_voiced(attribs):
     if not is_vowel(attribs):

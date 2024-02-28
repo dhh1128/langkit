@@ -16,4 +16,4 @@ SAMPLE_LANG = '''
 def test_syllables():
     l = Lang('foo', SAMPLE_LANG)
     for s in l.syllables:
-        print(s)
+        pass #print(s)
