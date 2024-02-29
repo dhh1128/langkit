@@ -36,35 +36,48 @@ class DefnItem:
 
 class Defn:
     def __init__(self, txt):
-        self._equivs = []
+        self.equivs = []
         self.parse(txt)
 
     def parse(self, txt):
         while txt:
             m = EQUIVS_PAT.match(txt)
             if m:
-                self._equivs.append(DefnItem(m.group(1) + m.group(2).strip()))
+                self.equivs.append(DefnItem(m.group(1) + m.group(2).strip()))
                 txt = txt[m.end():]
             else:
-                self._equivs.append(DefnItem(txt))
+                self.equivs.append(DefnItem(txt))
                 break
-        self._equivs.sort()
-        print(f"equivs = {self._equivs}")
+        self.equivs.sort()
+        print(f"equivs = {self.equivs}")
 
     def __str__(self):
-        return ', '.join([str(e) for e in self._equivs])
+        return ', '.join([str(e) for e in self.equivs])
     
 class SearchExpr:
     def __init__(self, expr):
         self.expr = expr
-        self._i = expr.find('*')
+        i = expr.find('*')
+        j = expr.find('?')
+        if i > -1:
+            if j > -1:
+                self._i = min(i, j)
+            else:
+                self._i = i
+        elif j > -1:
+            self._i = j
+        else:
+            self._i = -1
         self._regex = None if self._i == -1 else re.compile(expr.replace('?', '.').replace('*', '.*?'))
+
     @property
     def wildcarded(self):
         return self._i > -1
+
     @property
     def starter(self):
         return self.expr if self._i == -1 else self.expr[:self._i]
+
     def matches(self, txt):
         return self._regex.match(txt) if self._regex else (self.expr == txt)
 
@@ -74,7 +87,7 @@ class Entry:
             fields = fields.split('\t')
         self.lexeme = fields[0]
         self.pos = fields[1]
-        self.defn = fields[2]
+        self.defn = Defn(fields[2])
         if len(fields) > 3 and self.fields[3]:
             self.notes = fields[3]
         else:
@@ -143,6 +156,20 @@ class Glossary:
             if expr.matches(entry.lexeme):
                 hits.append(entry)
                 max_hits -= 1
+            index += 1
+        return hits
+    
+    def find_defn(self, expr, max_hits=5):
+        hits = []
+        expr = SearchExpr(expr)
+        index = 0
+        while index < self.lexeme_count and max_hits != 0:
+            entry = self._lexeme_to_en[index]
+            defn = entry.defn
+            for item in entry.defn.equivs:
+                if expr.matches(item.value):
+                    hits.append(entry)
+                    max_hits -= 1
             index += 1
         return hits
         

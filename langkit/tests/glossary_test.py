@@ -46,8 +46,21 @@ def test_Defn_multi():
 def test_load():
     # prove basic loading and that empty lines are ignored
     assert len(g._lexeme_to_en) == 6
-    assert g._lexeme_to_en[2].word == 'fry' # prove entries are sorted
+    assert g._lexeme_to_en[2].lexeme == 'fry' # prove entries are sorted
 
-def test_find_lexeme():
+def test_find_lexeme_simple():
     assert g.find_lexeme('fry')
     assert not g.find_lexeme('not-there')
+
+def test_find_lexeme_wildcards():
+    assert g.find_lexeme('fr*')
+    assert g.find_lexeme('?ry')
+    assert g.find_lexeme('*ry')
+    assert not g.find_lexeme('*not*')
+
+def test_find_defn_simple():
+    assert g.find_defn('a yellow fruit')
+    assert not g.find_defn('purple vegetable')
+
+def test_find_defn_wildcards():
+    assert len(g.find_defn('*fruit')) > 1
