@@ -45,9 +45,9 @@ def test_Defn_multi():
 
 def test_load():
     # prove basic loading and that empty lines are ignored
-    assert len(g._lang_to_en) == 6
-    assert g._lang_to_en[2].word == 'fry' # prove entries are sorted
+    assert len(g._lexeme_to_en) == 6
+    assert g._lexeme_to_en[2].word == 'fry' # prove entries are sorted
 
-def test_find():
-    assert g.find_lang('fry')
-    assert g.find_lang('not-there') is None
+def test_find_lexeme():
+    assert g.find_lexeme('fry')
+    assert not g.find_lexeme('not-there')

@@ -53,12 +53,26 @@ class Defn:
 
     def __str__(self):
         return ', '.join([str(e) for e in self._equivs])
+    
+class SearchExpr:
+    def __init__(self, expr):
+        self.expr = expr
+        self._i = expr.find('*')
+        self._regex = None if self._i == -1 else re.compile(expr.replace('?', '.').replace('*', '.*?'))
+    @property
+    def wildcarded(self):
+        return self._i > -1
+    @property
+    def starter(self):
+        return self.expr if self._i == -1 else self.expr[:self._i]
+    def matches(self, txt):
+        return self._regex.match(txt) if self._regex else (self.expr == txt)
 
 class Entry:
     def __init__(self, fields):
         if isinstance(fields, str):
             fields = fields.split('\t')
-        self.word = fields[0]
+        self.lexeme = fields[0]
         self.pos = fields[1]
         self.defn = fields[2]
         if len(fields) > 3 and self.fields[3]:
@@ -67,17 +81,21 @@ class Entry:
             self.notes = None
 
     def __lt__(self, other):
-        return self.word < other.word
+        return self.lexeme < other.lexeme
 
     def __str__(self):
         suffix = '' if self.notes is None else '\t' + self.notes 
-        return self.word + '\t' + self.pos + '\t' + self.defn + suffix
+        return self.lexeme + '\t' + self.pos + '\t' + self.defn + suffix
 
 class Glossary:
     def __init__(self):
         self.fname = None
-        self._lang_to_en = []
+        self._lexeme_to_en = []
         self._unsaved = False
+
+    @property
+    def lexeme_count(self):
+        return len(self._lexeme_to_en)
 
     @staticmethod
     def load(fname):
@@ -90,10 +108,10 @@ class Glossary:
             n += 1
             if line:
                 try:
-                    g._lang_to_en.append(Entry(line))
+                    g._lexeme_to_en.append(Entry(line))
                 except:
                     print(f"Couldn't parse line {n}: {line}")
-        g._lang_to_en.sort()
+        g._lexeme_to_en.sort()
         g._en_to_lang = []
         return g
     
@@ -115,13 +133,21 @@ class Glossary:
                     self._unsaved = False
             return True
 
-    def find_lang(self, word):
-        index = bisect.bisect_left(self._lang_to_en, word, key=lambda x: x.word)
-        if index < len(self._lang_to_en) and self._lang_to_en[index].word == word:
-            return self._lang_to_en[index]
+    def find_lexeme(self, expr, max_hits=5):
+        hits = []
+        expr = SearchExpr(expr)
+        initial_search = expr.starter
+        index = bisect.bisect_left(self._lexeme_to_en, initial_search, key=lambda x: x.lexeme) if initial_search else 0
+        while index < self.lexeme_count and max_hits != 0:
+            entry = self._lexeme_to_en[index]
+            if expr.matches(entry.lexeme):
+                hits.append(entry)
+                max_hits -= 1
+            index += 1
+        return hits
         
-    def insert(self, word, pos, defn, notes=None):
-        e = Entry((word, pos, defn, notes))
-        index = bisect.bisect_left(self._lang_to_en, word, key=lambda x: x.word)
-        self._lang_to_en.insert(index, e)
+    def insert(self, lexeme, pos, defn, notes=None):
+        e = Entry((lexeme, pos, defn, notes))
+        index = bisect.bisect_left(self._lexeme_to_en, lexeme, key=lambda x: x.lexeme)
+        self._lexeme_to_en.insert(index, e)
         self._unsaved = True
