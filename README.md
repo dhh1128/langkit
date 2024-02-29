@@ -1,3 +1,3 @@
-# langtool
+# langkit
 
-tool to generate and manipulate a language
+tool to build and use an artificial language

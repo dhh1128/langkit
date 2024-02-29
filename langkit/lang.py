@@ -6,17 +6,17 @@ from .glossary import Glossary
 CFG_NAME = 'cfg.json'
 GLOSSARY_NAME = 'glossary.txt'
 
-def _generate_syllables(pattern, vowels, consonants):
+def _FIXgenerate_syllables(pattern, vowels, consonants):
     i = pattern.find('V')
     if i > -1:
         for V in vowels:
-            for result in _generate_syllables(pattern[:i] + V + pattern[i + 1:], vowels, consonants):
+            for result in _FIXgenerate_syllables(pattern[:i] + V + pattern[i + 1:], vowels, consonants):
                 yield result
     else:
         i = pattern.find('C')
         if i > -1:
             for C in consonants:
-                for result in _generate_syllables(pattern[:i] + C + pattern[i + 1:], vowels, consonants):
+                for result in _FIXgenerate_syllables(pattern[:i] + C + pattern[i + 1:], vowels, consonants):
                     yield result
         else:
             yield pattern
@@ -60,7 +60,7 @@ class Lang:
         if self._syl is None:
             syl = []
             for pat in self.sylpats:
-                for s in _generate_syllables(pat, self.vowels, self.consonants):
+                for s in _FIXgenerate_syllables(pat, self.vowels, self.consonants):
                     syl.append(s)
             self._syl = syl
         return self._syl
