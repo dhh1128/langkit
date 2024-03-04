@@ -34,6 +34,8 @@ class Lang:
             self.cfg = {}
         if os.path.isfile(self.gloss_path):
             self.glossary = Glossary.load(self.gloss_path)
+        else:
+            self.glossary = Glossary()
 
     @property
     def cfg_path(self):

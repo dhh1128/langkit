@@ -1,61 +1,16 @@
-"""
-Phonemes defined in the IPA. This is not intended to be an exhaustive list -- just
-ones that are likely to be interesting in most language projects.
-"""
-IPA = {
-    'ɑ': 'open back vowel', # back sound made while gargling
-    'ɒ': 'open back rounded vowel', # the vowel emphasized in SNL's "coffee talk" skits
-    'a': 'open central vowel', # spanish a, farther forward sound than 2 previous
-    'e': 'close-mid near-front vowel', # spanish e
-    'i': 'close front vowel', ## ee in english green
-    'ɪ': 'near-close near-front vowel', # i in english spin
-    'o': 'close-mid back rounded vowel', # spanish o, not english sound that ends in [u]
-    'æ': 'near-open near-front vowel', # a in english "cat"
-    'u': 'close back rounded vowel', # oo in english "scoop"
-    'ʊ': 'near-close near-back vowel', # oo in english "good"
-    'ə': 'mid central vowel', # schwa
-    'f': 'labiodental fricative',
-    'v': 'voiced labiodental fricative',
-    'k': 'velar plosive',
-    'g': 'voiced velar plosive',
-    'j': 'voiced palatal transition', # y in english yell
-    'm': 'voiced bilabial nasal',
-    'n': 'voiced alveolar nasal',
-    'ɲ': 'voiced palatal nasal', # spanish ñ
-    'p': 'bilabial plosive',
-    'b': 'voiced bilabial plosive',
-    's': 'alveolar fricative',
-    'z': 'voiced alveolar fricative',
-    'ʃ': 'palato-alveolar fricative', #sh in english ship
-    'ʒ': 'voiced palato-alveolar fricative', # si in english "vision"
-    'θ': 'dental fricative', # th in english "thing"
-    'ð': 'voiced dental fricative', # th in english "that"
-    't': 'alveolar plosive',
-    'd': 'voiced alveolar plosive',
-    'l': 'voiced alveo-lateral approximant',
-    'w': 'voiced labial-velar transition',
-    'ʔ': 'glottal plosive',
-    'h': 'glottal transition',
-    'x': 'velar fricative',
-    'ɹ': 'voiced alveolar approximant', # r in english "car"
-    'ɾ': 'voiced alveolar flap', # r in spanish "pero"
-    'tʃ': 'postalveolar affricate', # ch in english "chair" 
-    'dʒ': 'voiced postalveolar affricate', # dg in english "judge" 
-}
-
 
 def _is_rounded_a(attribs):
     if _is_vowel_a(attribs):
         return "rounded" in attribs
     
 def is_rounded(phoneme):
-    return _is_rounded_a(IPA.get(phoneme))
+    return _is_rounded_a(COMMON_IPA.get(phoneme))
     
 def _is_vowel_a(attribs):
     return "vowel" in attribs
 
 def is_vowel(phoneme):
-    attribs = IPA.get(phoneme)
+    attribs = COMMON_IPA.get(phoneme)
     if attribs:
         return _is_vowel_a(attribs)
 
@@ -64,13 +19,29 @@ def _is_voiced_a(attribs):
         return "voiced" in attribs
     
 def is_voiced(phoneme):
-    return _is_voiced_a(IPA.get(phoneme))
+    return _is_voiced_a(COMMON_IPA.get(phoneme))
+
+def _is_interrupted_a(attribs):
+    return 'plosive' in attribs or 'flap' in attribs
+
+def is_interrupted(phoneme):
+    attribs = COMMON_IPA.get(phoneme)
+    if attribs:
+        return _is_interrupted_a(attribs)
+
+def _is_nasal_a(attribs):
+    return 'nasal' in attribs
+
+def is_nasal(phoneme):
+    attribs = COMMON_IPA.get(phoneme)
+    if attribs:
+        return _is_nasal_a(attribs)
 
 def _is_consonant_a(attribs):
     return "vowel" not in attribs
 
 def is_consonant(phoneme):
-    attribs = IPA.get(phoneme)
+    attribs = COMMON_IPA.get(phoneme)
     if attribs:
         return _is_consonant_a(attribs)
 
@@ -81,24 +52,25 @@ def _get_place_a(attribs):
         return attribs[:attribs.rfind(' ')].replace('voiced ', '')
     
 def get_place(phoneme):
-    return _get_place_a(IPA.get(phoneme))
+    return _get_place_a(COMMON_IPA.get(phoneme))
 
 def _get_manner_a(attribs):
     if not _is_vowel_a(attribs):
         return attribs[attribs.rfind(' ') + 1:]
     
 def get_manner(phoneme):
-    return _get_manner_a(IPA.get(phoneme))
+    return _get_manner_a(COMMON_IPA.get(phoneme))
 
-def can_add_std(a, b):
+def can_add_std(growing_syllable, next):
     """
-    Tell whether b can be added to a in the same syllable. Different languages
+    Tell whether next sound can be added to growing_syllable. Different languages
     have different combining rules. This function simply imposes a common set
     of choices that are likely to be true across many languages, eliminating
     the most common nonsensical combinations of sounds.
     """
-    a_attrib = IPA[a]
-    b_attrib = IPA[b]
+    prev = growing_syllable[-1]
+    a_attrib = COMMON_IPA[prev]
+    b_attrib = COMMON_IPA[next]
     # Long or doubled versions of sounds are not possible
     if a_attrib == b_attrib:
         return False
@@ -116,7 +88,7 @@ def can_add_std(a, b):
         # Diphthongs are high-effort sounds, but a schwa is the ultimate
         # relaxed sound. Doesn't make sense to combine it with something
         # that destroys that relaxation.
-        if a == 'ə' or b == 'ə':
+        if prev == 'ə' or next == 'ə':
             return False
         approx_place_a = place_a.replace("near-", "")
         approx_place_b = place_b.replace("near-", "")
@@ -138,7 +110,7 @@ def can_add_std(a, b):
     if place_b == 'glottal':
         return False
     # Glottal stop can only be followed by a vowel.
-    if a == 'ʔ':
+    if prev == 'ʔ':
         return False
     manner_a = _get_manner_a(a_attrib)
     # Transitions and flaps can't be followed by a consonant.
@@ -146,25 +118,89 @@ def can_add_std(a, b):
         return False
     manner_b = _get_manner_a(b_attrib)
     # Two consonants with the same manner of articulation are not allowed (pt, gd, ssh, chj)
-    # except alveolar + labiodental (vz or fs)
+    # except alveolar + labiodental (vz, fs)
     if manner_a == manner_b:
         x = ' '.join(sorted([place_a, place_b]))
-        return x == "alveolar labiodental"
-    if ' '.join(sorted([manner_a, manner_b])) == 'affricate fricative':
+        if x != "alveolar labiodental":
+            return False
+    # An affricate can't be followed by a fricative (ch+f, etc)
+    elif manner_a == 'affricate' and manner_b == 'fricative':
         return False
+
+    new_syllable = growing_syllable + next
+    if len(new_syllable) > 2:
+        # Don't allow two interruptions on same side of vowel.
+        # Don't allow two nasals either on same side of vowel, either.
+        # And don't allow the same sound to be repeated on same side of vowel.
+        found_interruption = False
+        found_nasal = False
+        found_fric = False
+        seen = []
+
+        for phoneme in new_syllable:
+            if is_vowel(phoneme):
+                found_interruption = False
+                found_nasal = False
+                seen = []
+                found_fric = False
+            else:
+                if phoneme in seen:
+                    return False
+                seen.append(phoneme)
+                if is_interrupted(phoneme):
+                    if found_interruption:
+                        return False
+                elif get_manner(phoneme) == 'fricative':
+                    if found_fric:
+                        return False
+                    else:
+                        found_fric = True
+                if is_nasal(phoneme):
+                    if found_nasal:
+                        return False
+
     return True
             
-if __name__ == '__main__':
-    n = 0
-    keys = sorted(IPA.keys())
-    for k in keys:
-        for kk in keys:
-            x = can_add_std(k, kk)
-            if x:
-                n += 1
-                print(f"{k}{kk}")
-    print(n)
-            
+def _valid_next(pat_item, vowels, consonants, growing_syllable=None):
+    if pat_item == 'C':
+        collection = consonants
+    elif pat_item == 'V':
+        collection = vowels
+    else:
+        collection = [pat_item]
+    if not growing_syllable:
+        for item in collection:
+            yield item
+    else:
+        for phoneme in collection:
+            if can_add_std(growing_syllable, phoneme):
+                yield phoneme
 
-    
+def _get_all_valid_remainders(pat, vowels, consonants, growing_syllable):
+    # Identify what will be left in the syllable pattern after we process
+    # what we're looking at here.
+    remainder = pat[1:]
+    # For each character that could be fill the current spot in the pattern...
+    for prefix in _valid_next(pat[0], vowels, consonants, growing_syllable):
+        # If there's more pattern to complete...
+        if remainder:
+            new_syllable = growing_syllable + prefix if growing_syllable else prefix
+            # Recurse to find what could come after
+            for suffix in _get_all_valid_remainders(remainder, vowels, consonants, new_syllable):
+                # Generate what fits in this spot plus all variations that could come after
+                yield prefix + suffix
+        else:
+            yield prefix
+
+def conceivable_syllables(vowels, consonants, *patterns):
+    """
+    Returns a set of all syllables that might make sense. Eliminates those
+    that are not pronouncable by the human vocal tract or that are vanishingly
+    rare.
+    """
+    for pat in patterns:
+        for syllable in _get_all_valid_remainders(pat, vowels, consonants, None):
+            yield syllable
+
+
 

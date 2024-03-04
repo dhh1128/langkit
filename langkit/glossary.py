@@ -8,7 +8,7 @@ ROUGH_EQUIV = '~'
 EXPLAINED_EQUIV = ':'
 EXACT_EQUIV = ''
 EQUIV_CHARS = NARROWER_EQUIV + BROADER_EQUIV + ROUGH_EQUIV + EXPLAINED_EQUIV
-EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(,|$)')
+EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(\||$)')
 
 class DefnItem:
     def __init__(self, txt):
@@ -52,7 +52,7 @@ class Defn:
         print(f"equivs = {self.equivs}")
 
     def __str__(self):
-        return ', '.join([str(e) for e in self.equivs])
+        return ' | '.join([str(e) for e in self.equivs])
     
 class SearchExpr:
     def __init__(self, expr):
@@ -105,6 +105,7 @@ class Glossary:
         self.fname = None
         self._lexeme_to_en = []
         self._unsaved = False
+        self._en_to_lang = []
 
     @property
     def lexeme_count(self):
@@ -125,7 +126,6 @@ class Glossary:
                 except:
                     print(f"Couldn't parse line {n}: {line}")
         g._lexeme_to_en.sort()
-        g._en_to_lang = []
         return g
     
     def save(self, fname=None):

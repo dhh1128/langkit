@@ -40,8 +40,8 @@ def test_DefnItem_sort():
             assert items[1 + j].kind == EQUIV_CHARS[j]
 
 def test_Defn_multi():
-    defn = Defn('~def, <a, > bc , :something, another something')
-    assert str(defn) == "another something, >bc, <a, ~def, :something"
+    defn = Defn('~def| <a| > bc | :something| another something')
+    assert str(defn) == "another something | >bc | <a | ~def | :something"
 
 def test_load():
     # prove basic loading and that empty lines are ignored

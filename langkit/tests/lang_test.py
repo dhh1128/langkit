@@ -16,6 +16,7 @@ def test_no_data():
     assert l.vowels == "aeiou"
     assert l.consonants == "stpnmfhzdb"
     assert len(l.sylpats) == 5
+    assert l.glossary.lexeme_count == 0
 
 def test_load_from_disk():
     l = MARTIAN
@@ -23,6 +24,7 @@ def test_load_from_disk():
     assert l.vowels == "eio"
     assert l.consonants == "spx"
     assert len(l.sylpats) == 2
+    assert l.glossary.lexeme_count > 5
 
 def test_syllables():
     count = sum(1 for _ in MARTIAN.syllables)

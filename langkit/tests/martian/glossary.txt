@@ -1,8 +1,8 @@
-apple	n	a red fruit
+apple	n	a red fruit| >jonathan
 banana	n	a yellow fruit
-swallow	v	to move food from mouth to stomach
-sweet	a	having a sugary flavor
+swallow	v	:to move food from mouth to stomach
+sweet	a	~having a sugary flavor
 
    
-pickle	n	a cucumber soaked in vinegar
+pickle	n	a cucumber soaked in vinegar | python's serialization algorithm
 fry	v	to cook in hot oil
