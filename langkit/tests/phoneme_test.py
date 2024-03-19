@@ -79,7 +79,7 @@ def test_attrib_phrase_to_bits():
              error = f"{phrase} yielded {hex(n)} ({actual}), not {hex(bits)} ({expected})"
              assert not error
     check('alveolar lateral click', ALVEOLAR | LATERAL | CLICK)
-    check('postalveolar click', POST_ALVEOLAR | CLICK)
+    check('postalveolar click', POSTALVEOLAR | CLICK)
     check('velar approximant', VOICED | VELAR | APPROXIMANT | PULMONIC)
     check('voiceless palatal-velar fricative', VOICELESS | PALATAL_VELAR | FRICATIVE | PULMONIC)
     check('voiceless uvular plosive', VOICELESS | UVULAR | PLOSIVE | PULMONIC)
@@ -101,4 +101,133 @@ def test_attrib_bits_to_phrase_round_trip():
         expected = p[2]
         actual = attrib_bits_to_phrase(attrib_phrase_to_bits(expected))
         assert actual == expected
+
+def check_2(func, should_be_true, should_be_false):
+    assert func(ByIPA[should_be_true]) == True
+    assert func(ByIPA[should_be_false]) == False
+
+def test_is_rounded():
+    check_2(lambda x: x.is_rounded, 'o', 'i')
+
+def test_is_vowel():
+    check_2(lambda x: x.is_vowel, 'a', 's')
+
+def test_is_voiced():
+    check_2(lambda x: x.is_voiced, 'd', 'x')
+
+def test_is_interrupted():
+    check_2(lambda x: x.is_interrupted, 'd', 'x')
+
+def test_is_nasal():
+    check_2(lambda x: x.is_nasal, 'm', 'x')
+
+def test_is_consonant():
+    check_2(lambda x: x.is_consonant, 'p', 'u')
+
+def test_place():
+    assert ByIPA['a'].place == UNDEFINED
+    assert ByIPA['t'].place == ALVEOLAR
+
+def test_manner():
+   assert ByIPA['a'].manner == UNDEFINED
+   assert ByIPA['s'].manner == FRICATIVE
+
+def check_mex(func1, func2):
+    for xsampa, phone in ByXSampa.items():
+        a = func1(phone)
+        b = func2(phone)
+        if a or b:
+            assert a != b
+
+def test_mutually_exclusive():
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_consonant)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_nasal)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_glide)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_liquid)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_affricate)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_plosive)
+    check_mex(lambda ph: ph.is_vowel, lambda ph: ph.is_interrupted)
+    check_mex(lambda ph: ph.is_rounded, lambda ph: ph.is_consonant)
+    check_mex(lambda ph: ph.is_glide, lambda ph: ph.is_plosive)
+    check_mex(lambda ph: ph.is_glide, lambda ph: ph.is_liquid)
+
+def test_sonority():
+    def assert_gt(a, b):
+        assert ByIPA[a].sonority > ByIPA[b].sonority
+    assert_gt('a', 'j')
+    assert_gt('j', 'l')
+    assert_gt('l', 'n')
+    assert_gt('n', 'z')
+    assert_gt('z', 's')
+    assert_gt('s', 'd')
+    assert_gt('d', 't')
+    assert_gt('t', 'ʘ')
+
+def test_vowel_distance():
+    def assert_approx(actual, expected):
+        assert (actual >= expected * 0.99) and (actual <= expected * 1.01)
+    def vd(a, b, val):
+        assert_approx(vowel_distance(ByIPA[a], ByIPA[b]), val)
+    vd('a', 'i', 6) # open front to close front
+    vd('u', 'i', 2) # close back to close front
+    vd('a', 'u', 6.32) # open front to close back
+    vd('æ', 'ɞ', 1.414) # near-open front to open-mid central 
+
+def test_can_be_vocalic():
+    assert ByIPA['n'].can_be_vocalic
+    assert ByIPA['l'].can_be_vocalic
+    assert ByIPA['s'].can_be_vocalic == False
+
+def test_cant_append():
+    def ok(a, b):
+        assert can_add_std(a, b) == True
+    def bad(a, b):
+        assert can_add_std(a, b) == False
+    ok('t', 'a')
+    ok('a', 't')
+    bad('t', 't')
+    bad('t', 'h')
+    bad('a', 'ə')
+    bad('a', 'ɒ')
+    bad('a', 'æ')
+    ok('a', 'i')
+    ok('u', 'e')
+    bad('z', 's')
+    ok('s', 'l')
+
+NO_MAX = 1000000
+def assert_syl(vowels, consonants, syls, min_count=0, max_count=NO_MAX, must_include=None, cant_include=None):
+    n = 0
+    cant = []
+    s = []
+    for item in conceivable_syllables(vowels, consonants, *syls):
+        s.append(item)
+        if must_include:
+            try:
+                i = must_include.index(item)
+                del must_include[i]
+            except ValueError:
+                pass
+        if cant_include:
+            if item in cant_include:
+                cant.append(item)
+        n += 1
+    if min_count > 0:
+        assert n >= min_count
+    if max_count >= 0 and max_count <= NO_MAX:
+        assert n <= max_count
+    if must_include == []: must_include = None
+    if cant == []: cant = None
+    assert must_include is None
+    assert cant is None
+    return s
+    
+def xtest_syllables_easy():
+    assert_syl('ai', 'sm', ['V', 'CV'], 6, 6, ['a', 'sa'], ['sm', 'aa'])
+
+def xtest_syllables_complex():
+    syl = assert_syl('aeiou', 'smphntk', ['CCCV'], 40)
+    long_syl = [s for s in syl if len(s) == 4]
+    assert long_syl == []
+
 

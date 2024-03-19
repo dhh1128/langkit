@@ -1,3 +1,6 @@
+import math
+
+UNDEFINED = 0
 PULMONIC = 1 # bit 0
 VOWEL = 1 << 1
 # There are 2 mutually exclusive choices for roundedness.
@@ -25,6 +28,7 @@ NEAR_CLOSE = 6 << 6
 CLOSE = 7 << 6
 # There are 12 places of articulation. We use individual
 # bits for these to support co-articulation.
+POA_MASK = 8191 << 9
 BILABIAL = 1 << 9 
 LABIODENTAL = 1 << 10
 # Labial is a generic term for anything involving the lips
@@ -109,6 +113,17 @@ MANNERS = [AFFRICATE, FLAP, TRILL, APPROXIMANT, FRICATIVE, PLOSIVE, NASAL]
 PLACES = [GLOTTAL, EPIGLOTTAL, PHARYNGEAL, UVULAR, VELAR, PALATAL, RETROFLEX, POSTALVEOLAR, ALVEOLAR, DENTAL, LABIODENTAL, BILABIAL]
 IMPLIED_VOICINGS = [NASAL, APPROXIMANT, TRILL, FLAP]
 COARTICULATIONS = [ALVEOLO_PALATAL, LABIAL_VELAR, PALATAL_VELAR, LABIAL_PALATAL]
+INTERRUPTED_MANNERS = [PLOSIVE, FLAP, AFFRICATE] 
+VOWEL_SONORITY = 1.0
+GLIDE_SONORITY = 0.925
+LIQUID_SONORITY = 0.875
+NASAL_SONORITY = 0.825
+MINIMUM_VOCALIC_SONORITY = 0.8
+FRICATIVE_SONORITY = 0.74
+AFFRICATE_SONORITY = 0.64
+PLOSIVE_SONORITY = 0.54
+NON_PULMONIC_SONORITY = 0.4
+VOICED_SONORITY_BOOST = 0.01
 
 def attrib_name_to_value(name):
     name = name.lower().replace('_', '').replace('-', '')
@@ -299,8 +314,118 @@ _ph = [
 ]
 
 class Phoneme:
-    def __init__(self, x_sampa, ipa, descrip):
-        self.x_sampa = x_sampa
-        self.ipa = ipa
-        self.descrip = descrip
+    def __init__(self, x_sampa, ipa, descrip, example):
+        self._x_sampa = x_sampa
+        self._ipa = ipa
+        self._descrip = descrip
+        self._example = example
+        self._bits = attrib_phrase_to_bits(descrip)
+    @property
+    def ipa(self):
+        return self._ipa
+    @property
+    def x_sampa(self):
+        return self._x_sampa
+    @property
+    def descrip(self):
+        return self._descrip
+    @property
+    def example(self):
+        return self._example
+    @property
+    def is_glide(self):
+        return self._ipa in ['j', 'w', 'ɥ', 'ɰ', 'ʋ']
+    @property
+    def is_liquid(self):
+        return self._ipa in ['l', 'ɹ', 'ɾ', 'ɻ', 'ʎ']  # 'ɭ', 'ʟ'
+    @property
+    def is_fricative(self):
+        return (self._bits & MANNER_MASK) == FRICATIVE
+    @property
+    def is_plosive(self):
+        return (self._bits & MANNER_MASK) == PLOSIVE
+    @property
+    def is_affricate(self):
+        return (self._bits & MANNER_MASK) == AFFRICATE
+    @property
+    def sonority(self):
+        if self.is_vowel: return VOWEL_SONORITY
+        if self.is_glide: return GLIDE_SONORITY
+        if self.is_liquid: return LIQUID_SONORITY
+        if self.is_nasal: return NASAL_SONORITY
+        if self.is_fricative: n = FRICATIVE_SONORITY
+        elif self.is_affricate: n = AFFRICATE_SONORITY
+        elif self.is_plosive: n = PLOSIVE_SONORITY
+        else: n = NON_PULMONIC_SONORITY
+        if self.is_voiced:
+            n += VOICED_SONORITY_BOOST
+        return n
+    @property
+    def can_be_vocalic(self):
+        return self.sonority >= NASAL_SONORITY
+    @property
+    def is_interrupted(self):
+        if self.is_consonant:
+            if self.is_pulmonic:
+                return self.manner in INTERRUPTED_MANNERS
+            else:
+                return (self._bits & NON_PULMONIC_MASK) != 0
+    @property
+    def is_rounded(self):
+        return (self._bits & ROUNDING_MASK) == ROUNDED
+    @property
+    def is_vowel(self):
+        return (self._bits & VOWEL) == VOWEL
+    @property
+    def is_consonant(self):
+        return (self._bits & VOWEL) != VOWEL
+    @property
+    def is_voiced(self):
+        return (self._bits & VOICED) == VOICED
+    @property
+    def is_nasal(self):
+        return (self._bits & MANNER_MASK) == NASAL
+    @property
+    def is_pulmonic(self):
+        return (self._bits & PULMONIC) == PULMONIC
+    @property
+    def place(self):
+        return (self._bits & POA_MASK)
+    @property
+    def manner(self):
+        return (self._bits & MANNER_MASK)
+    @property
+    def position(self):
+        return (self._bits & VOWEL_POSITION_MASK)
+    @property
+    def openness(self):
+        return (self._bits & VOWEL_OPENNESS_MASK)
+    def __str__(self):
+        return self._ipa
+    def __lt__(self, other):
+        return self._ipa < other._ipa if isinstance(other, Phoneme) else self._ipa < other
+    def __eq__(self, other):
+        if isinstance(other, Phoneme):
+            return self._ipa == other._ipa
+        return False
 
+ByIPA = {}
+ByXSampa = {}
+for p in _ph:
+    phone = Phoneme(p[0], p[1], p[2], p[3])
+    ByIPA[phone.ipa] = phone
+    ByXSampa[phone.x_sampa] = phone
+
+SCHWA = ByIPA['ə']
+
+def vowel_distance(vowel_a, vowel_b):
+    """
+    Computes the distance between two vowels -- one unit of distance for their
+    separation front-to-back, and one unit of distance for their separation
+    open-to-close.
+    """
+    a_pos = vowel_a.position >> 4
+    b_pos = vowel_b.position >> 4
+    a_openness = vowel_a.openness >> 6
+    b_openness = vowel_b.openness >> 6
+    return math.sqrt(abs(a_pos - b_pos)**2 + abs(a_openness - b_openness)**2)

@@ -127,6 +127,11 @@ def can_add_std(growing_syllable, next):
     elif manner_a == 'affricate' and manner_b == 'fricative':
         return False
 
+    # require something that's MINIMUM_VOCALIC_SONORITY
+    # don't allow two nucleuses
+    # don't allow voiced unvoiced voiced
+    # glides can only exist next to a vowel
+
     new_syllable = growing_syllable + next
     if len(new_syllable) > 2:
         # Don't allow two interruptions on same side of vowel.
