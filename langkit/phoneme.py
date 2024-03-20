@@ -1,3 +1,4 @@
+from typing import Generator, List, Union, Dict
 import math
 
 UNDEFINED = 0
@@ -321,34 +322,34 @@ class Phoneme:
         self._example = example
         self._bits = attrib_phrase_to_bits(descrip)
     @property
-    def ipa(self):
+    def ipa(self) -> str:
         return self._ipa
     @property
-    def x_sampa(self):
+    def x_sampa(self) -> str:
         return self._x_sampa
     @property
-    def descrip(self):
+    def descrip(self) -> str:
         return self._descrip
     @property
-    def example(self):
+    def example(self) -> str:
         return self._example
     @property
-    def is_glide(self):
+    def is_glide(self) -> bool:
         return self._ipa in ['j', 'w', 'ɥ', 'ɰ', 'ʋ']
     @property
-    def is_liquid(self):
+    def is_liquid(self) -> bool:
         return self._ipa in ['l', 'ɹ', 'ɾ', 'ɻ', 'ʎ']  # 'ɭ', 'ʟ'
     @property
-    def is_fricative(self):
+    def is_fricative(self) -> bool:
         return (self._bits & MANNER_MASK) == FRICATIVE
     @property
-    def is_plosive(self):
+    def is_plosive(self) -> bool:
         return (self._bits & MANNER_MASK) == PLOSIVE
     @property
-    def is_affricate(self):
+    def is_affricate(self) -> bool:
         return (self._bits & MANNER_MASK) == AFFRICATE
     @property
-    def sonority(self):
+    def sonority(self) -> float:
         if self.is_vowel: return VOWEL_SONORITY
         if self.is_glide: return GLIDE_SONORITY
         if self.is_liquid: return LIQUID_SONORITY
@@ -361,44 +362,44 @@ class Phoneme:
             n += VOICED_SONORITY_BOOST
         return n
     @property
-    def can_be_vocalic(self):
+    def can_be_vocalic(self) -> bool:
         return self.sonority >= NASAL_SONORITY
     @property
-    def is_interrupted(self):
+    def is_interrupted(self) -> bool:
         if self.is_consonant:
             if self.is_pulmonic:
                 return self.manner in INTERRUPTED_MANNERS
             else:
                 return (self._bits & NON_PULMONIC_MASK) != 0
     @property
-    def is_rounded(self):
+    def is_rounded(self) -> bool:
         return (self._bits & ROUNDING_MASK) == ROUNDED
     @property
-    def is_vowel(self):
+    def is_vowel(self) -> bool:
         return (self._bits & VOWEL) == VOWEL
     @property
-    def is_consonant(self):
+    def is_consonant(self) -> bool:
         return (self._bits & VOWEL) != VOWEL
     @property
-    def is_voiced(self):
+    def is_voiced(self) -> bool:
         return (self._bits & VOICED) == VOICED
     @property
-    def is_nasal(self):
+    def is_nasal(self) -> bool:
         return (self._bits & MANNER_MASK) == NASAL
     @property
-    def is_pulmonic(self):
+    def is_pulmonic(self) -> bool:
         return (self._bits & PULMONIC) == PULMONIC
     @property
-    def place(self):
+    def place(self) -> int:
         return (self._bits & POA_MASK)
     @property
-    def manner(self):
+    def manner(self) -> int:
         return (self._bits & MANNER_MASK)
     @property
-    def position(self):
+    def position(self) -> int:
         return (self._bits & VOWEL_POSITION_MASK)
     @property
-    def openness(self):
+    def openness(self) -> int:
         return (self._bits & VOWEL_OPENNESS_MASK)
     def __str__(self):
         return self._ipa
@@ -408,6 +409,12 @@ class Phoneme:
         if isinstance(other, Phoneme):
             return self._ipa == other._ipa
         return False
+    
+EachPhoneme = Generator[Phoneme, None, None]
+PhonemeList = List[Phoneme]
+StrOrPhonemeList = Union[str, PhonemeList]
+EachPhonemeList = Generator[PhonemeList, None, None]
+PhonemeLookup = Dict[str, Phoneme]
 
 ByIPA = {}
 ByXSampa = {}
@@ -418,7 +425,7 @@ for p in _ph:
 
 SCHWA = ByIPA['ə']
 
-def vowel_distance(vowel_a, vowel_b):
+def vowel_distance(vowel_a: Phoneme, vowel_b: Phoneme) -> float:
     """
     Computes the distance between two vowels -- one unit of distance for their
     separation front-to-back, and one unit of distance for their separation
@@ -429,3 +436,9 @@ def vowel_distance(vowel_a, vowel_b):
     a_openness = vowel_a.openness >> 6
     b_openness = vowel_b.openness >> 6
     return math.sqrt(abs(a_pos - b_pos)**2 + abs(a_openness - b_openness)**2)
+
+def ipa_str_to_phoneme_list(ipa: str) -> PhonemeList:
+    return [ByIPA[ch] for ch in ipa]
+
+def phoneme_list_to_ipa_str(phonemes: PhonemeList) -> str:
+    return ''.join([ph.ipa for ph in phonemes])

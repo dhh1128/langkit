@@ -1,5 +1,6 @@
 
 from ..syllable import *
+from ..syllable import _why_not_next
 
 def assert_match(pat, text, expected, inventory=None):
     p = Pattern(pat)
@@ -102,7 +103,7 @@ def test_bad_syllables():
 def check_wnn(current_and_next, expected_error=None, allow_doubles=None):
     current = [ByIPA[ph] for ph in current_and_next[:-1]]
     next = ByIPA[current_and_next[-1]]
-    err = Syllable.why_not_next(current, next, allow_doubles)
+    err = _why_not_next(current, next, allow_doubles)
     if expected_error:
         err = err.lower() if err else ''
         assert expected_error in err
@@ -141,3 +142,42 @@ def test_why_not_next_misc():
     check_wnn('alts')
     check_wnn('armps')
     check_wnn('str')
+
+NO_MAX = 1000000
+def assert_syl(vowels, consonants, pats, min_count=0, 
+               max_count=NO_MAX, must_include=None, cant_include=None):
+    n = 0
+    cant = []
+    s = []
+    for item in candidates(vowels, consonants, None, *pats):
+        item = str(item)
+        s.append(item)
+        if must_include:
+            try:
+                i = must_include.index(item)
+                del must_include[i]
+            except ValueError:
+                pass
+        if cant_include:
+            if item in cant_include:
+                cant.append(item)
+        n += 1
+    if min_count > 0:
+        assert n >= min_count
+    if max_count >= 0 and max_count <= NO_MAX:
+        assert n <= max_count
+    if must_include == []: must_include = None
+    if cant == []: cant = None
+    assert must_include is None
+    assert cant is None
+    return s
+    
+def test_syllables_easy():
+    assert_syl('ai', 'sm', ['V', 'CV'], 6, 6, ['a', 'sa'], ['sm', 'aa'])
+
+def test_syllables_complex():
+    syl = assert_syl('aeiou', 'smphntk', ['CCCV'], 40)
+    long_syl = [s for s in syl if len(s) == 4]
+    assert long_syl == []
+
+
