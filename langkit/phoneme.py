@@ -414,7 +414,11 @@ EachPhoneme = Generator[Phoneme, None, None]
 PhonemeList = List[Phoneme]
 StrOrPhonemeList = Union[str, PhonemeList]
 EachPhonemeList = Generator[PhonemeList, None, None]
+IPAStr = str
+XSampaStr = str
 PhonemeLookup = Dict[str, Phoneme]
+PhonemeLookupByIPA = Dict[IPAStr, Phoneme]
+PhonemeLookupByXSampa = Dict[XSampaStr, Phoneme]
 
 ByIPA = {}
 ByXSampa = {}
