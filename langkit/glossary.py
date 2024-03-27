@@ -12,7 +12,6 @@ EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(\||$)')
 
 class DefnItem:
     def __init__(self, txt):
-        print(f"txt = {txt}")
         ec = txt[0]
         if ec in EQUIV_CHARS:
             self.kind = ec
@@ -49,7 +48,6 @@ class Defn:
                 self.equivs.append(DefnItem(txt))
                 break
         self.equivs.sort()
-        print(f"equivs = {self.equivs}")
 
     def __str__(self):
         return ' | '.join([str(e) for e in self.equivs])

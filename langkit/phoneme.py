@@ -349,6 +349,15 @@ class Phoneme:
     def is_affricate(self) -> bool:
         return (self._bits & MANNER_MASK) == AFFRICATE
     @property
+    def is_click(self) -> bool:
+        return (self._bits & NON_PULMONIC_MASK) == CLICK
+    @property
+    def is_ejective(self) -> bool:
+        return (self._bits & NON_PULMONIC_MASK) == EJECTIVE
+    @property
+    def is_implosive(self) -> bool:
+        return (self._bits & NON_PULMONIC_MASK) == IMPLOSIVE
+    @property
     def sonority(self) -> float:
         if self.is_vowel: return VOWEL_SONORITY
         if self.is_glide: return GLIDE_SONORITY
@@ -441,8 +450,8 @@ def vowel_distance(vowel_a: Phoneme, vowel_b: Phoneme) -> float:
     b_openness = vowel_b.openness >> 6
     return math.sqrt(abs(a_pos - b_pos)**2 + abs(a_openness - b_openness)**2)
 
-def ipa_str_to_phoneme_list(ipa: str) -> PhonemeList:
+def ipa_to_phonemes(ipa: str) -> PhonemeList:
     return [ByIPA[ch] for ch in ipa]
 
-def phoneme_list_to_ipa_str(phonemes: PhonemeList) -> str:
+def phonemes_to_ipa(phonemes: PhonemeList) -> str:
     return ''.join([ph.ipa for ph in phonemes])

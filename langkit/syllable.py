@@ -5,7 +5,7 @@ from .phoneme import *
 class Syllable:
     def __init__(self, phonemes: StrOrPhonemeList):
         self._phonemes = phonemes if isinstance(phonemes, str) \
-            else phoneme_list_to_ipa_str(phonemes)
+            else phonemes_to_ipa(phonemes)
         self._nucleus = -1
         self._coda = -1
         self._analyze()
@@ -152,6 +152,9 @@ def _why_not_next(
         if next.place == GLOTTAL:
             return f"Glottals can't follow other consonants."
         
+        if next.is_click:
+            return f"Clicks can't follow other consonants."
+        
         if prev.ipa == 'ʔ':
             return f"Glottal stop can't be followed by a consonant."
         
@@ -168,8 +171,11 @@ def _why_not_next(
         if prev.is_glide:
             return "Glides must be next to vowels."
 
-        if (next.is_nasal and prev.is_nasal) and not same:
-            return "Consecutive nasals are not distinct enough."
+        if next.is_nasal:
+            if prev.is_nasal and not same:
+                return "Consecutive nasals are not distinct enough."
+            if prev.is_interrupted:
+                return "Nasal can't follow something that's interrupted."
         
         # Rule 1: can't have the same phone twice on the same side of a
         # vowel, even if not repeated.
@@ -190,7 +196,7 @@ def _why_not_next(
                     check_dup = True
                 else:
                     if pre == next:
-                        return "/{next}/ can't appear twice on the same side of a vowel."
+                        return f"/{next}/ can't appear twice on the same side of a vowel."
                 # Rule 2`
                 if check_interrupted and pre.is_interrupted:
                     return f"Already interrupted with /{pre}/; can't do it again with /{next}/."
@@ -226,7 +232,8 @@ def _valid_next(
     else:
         for phoneme in collection:
             # Otherwise, find next phonemes that don't violate rules.
-            if not _why_not_next(growing_syllable, phoneme, allowed_doubles):
+            err = _why_not_next(growing_syllable, phoneme, allowed_doubles)
+            if not err:
                 yield phoneme
 
 def _get_all_valid_remainders(
@@ -272,14 +279,11 @@ def candidates(
         if isinstance(patterns[0], Pattern):
             patterns = [str(x) for x in patterns]
         if isinstance(vowels, str):
-            vowels = ipa_str_to_phoneme_list(vowels)
+            vowels = ipa_to_phonemes(vowels)
         if isinstance(consonants, str):
-            consonants = ipa_str_to_phoneme_list(consonants)
+            consonants = ipa_to_phonemes(consonants)
         if allowed_doubles and isinstance(allowed_doubles, str):
-            allowed_doubles = ipa_str_to_phoneme_list(allowed_doubles)
+            allowed_doubles = ipa_to_phonemes(allowed_doubles)
         for pat in patterns:
             for syllable in _get_all_valid_remainders(pat, vowels, consonants, allowed_doubles, None):
-                yield Syllable(phoneme_list_to_ipa_str(syllable))
-
-
-
+                yield Syllable(phonemes_to_ipa(syllable))

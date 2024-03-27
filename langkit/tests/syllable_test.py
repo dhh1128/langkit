@@ -128,6 +128,7 @@ def test_why_not_next_double_triple_nasals():
     check_wnn('mmm', "can't triple", [ByIPA["m"]])
 
 def test_why_not_next_misc():
+    check_wnn('sʘ', "can't follow")
     check_wnn('ʔs', "can't be followed by a consonant")
     check_wnn('kh', "glottals can't follow")
     check_wnn('ɽs', "flap can't be followed by a consonant")
@@ -176,7 +177,16 @@ def test_syllables_easy():
     assert_syl('ai', 'sm', ['V', 'CV'], 6, 6, ['a', 'sa'], ['sm', 'aa'])
 
 def test_syllables_complex():
+    # These are some good vowels and consonants, and this is a single
+    # syllable pattern that could be used to combine them. However,
+    # none of these consonants should be capable of participating in
+    # a 3-consonant cluster with the other consonants, so we should
+    # generate no real syllables.
     syl = assert_syl('aeiou', 'smphntk', ['CCCV'], 40)
+    i = 0
+    for s in syl:
+        print(f"{i} {s}")
+        i += 1
     long_syl = [s for s in syl if len(s) == 4]
     assert long_syl == []
 

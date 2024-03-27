@@ -94,7 +94,7 @@ def test_attrib_phrase_to_bits():
 
 def test_attrib_bits_to_phrase_round_trip():
     y = attrib_phrase_to_bits("voiced bilabial plosive")
-    print(show_relevant_bits(y))
+    #print(show_relevant_bits(y))
     x = attrib_bits_to_phrase(BILABIAL | PLOSIVE | VOICED)
     broken = []
     for p in _ph:
@@ -123,6 +123,23 @@ def test_is_nasal():
 
 def test_is_consonant():
     check_2(lambda x: x.is_consonant, 'p', 'u')
+
+def test_is_plosive():
+    check_2(lambda x: x.is_plosive, 'p', 's')
+
+def test_is_affricate():
+    print('DISABLED - NO AFFRICATES IN IPA TABLE YET')
+    #check_2(lambda x: x.is_affricate, 'ts', 't')
+
+def test_is_click():
+    check_2(lambda x: x.is_click, 'ǃ', 'k')
+
+def test_is_ejective():
+    print('DISABLED - NO EJECTIVES IN IPA TABLE YET')
+    #check_2(lambda x: x.is_ejective, "p'", 'k')
+
+def test_is_implosive():
+    check_2(lambda x: x.is_implosive, 'ʄ', 'p')
 
 def test_place():
     assert ByIPA['a'].place == UNDEFINED
