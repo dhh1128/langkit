@@ -8,7 +8,13 @@ ROUGH_EQUIV = '~'
 EXPLAINED_EQUIV = ':'
 EXACT_EQUIV = ''
 EQUIV_CHARS = NARROWER_EQUIV + BROADER_EQUIV + ROUGH_EQUIV + EXPLAINED_EQUIV
-EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(\||$)')
+EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(/|$)')
+COLUMNS = ['lexeme', 'pos', 'definition', 'notes']
+COLUMN_COUNT = len(COLUMNS)
+COLUMN_SEP = ' | '
+HEADER = COLUMN_SEP.join(COLUMNS)
+DIVIDER = re.sub('[a-zA-Z]', '-', HEADER)
+DIVIDER_PAT = re.compile(r'\s*' + r"\s*\|\s*".join('-+') + r'\s*')
 
 class DefnItem:
     def __init__(self, txt):
@@ -82,7 +88,7 @@ class SearchExpr:
 class Entry:
     def __init__(self, fields):
         if isinstance(fields, str):
-            fields = fields.split('\t')
+            fields = fields.split('|')
         self.lexeme = fields[0]
         self.pos = fields[1]
         self.defn = Defn(fields[2])
@@ -95,8 +101,8 @@ class Entry:
         return self.lexeme < other.lexeme
 
     def __str__(self):
-        suffix = '' if self.notes is None else '\t' + self.notes 
-        return self.lexeme + '\t' + self.pos + '\t' + self.defn + suffix
+        suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
+        return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + self.defn + suffix
 
 class Glossary:
     def __init__(self):
