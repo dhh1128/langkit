@@ -4,6 +4,7 @@ import os
 import random
 
 SAMPLE_GLOSS_PATH = os.path.join(os.path.dirname(__file__), 'martian', 'glossary.txt')
+SAMPLE_MD_GLOSS_PATH = SAMPLE_GLOSS_PATH.replace('.txt', '.md')
 g = Glossary.load(SAMPLE_GLOSS_PATH)
 
 def assert_di(x, kind, txt=None):
@@ -40,13 +41,18 @@ def test_DefnItem_sort():
             assert items[1 + j].kind == EQUIV_CHARS[j]
 
 def test_Defn_multi():
-    defn = Defn('~def| <a| > bc | :something| another something')
-    assert str(defn) == "another something | >bc | <a | ~def | :something"
+    defn = Defn('~def/ <a/> bc / :something/ another something')
+    assert str(defn) == "another something / >bc / <a / ~def / :something"
 
 def test_load():
     # prove basic loading and that empty lines are ignored
-    assert len(g._lexeme_to_en) == 6
-    assert g._lexeme_to_en[2].lexeme == 'fry' # prove entries are sorted
+    assert len(g._lexeme_to_gloss) == 6
+    assert g._lexeme_to_gloss[2].lexeme == 'fry' # prove entries are sorted
+
+def test_load_markdown():
+    g = Glossary.load(SAMPLE_MD_GLOSS_PATH)
+    assert len(g._lexeme_to_gloss) == 6
+    assert g._lexeme_to_gloss[2].lexeme == 'fry' # prove entries are sorted
 
 def test_find_lexeme_simple():
     assert g.find_lexeme('fry')

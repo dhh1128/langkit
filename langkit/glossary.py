@@ -14,7 +14,7 @@ COLUMN_COUNT = len(COLUMNS)
 COLUMN_SEP = ' | '
 HEADER = COLUMN_SEP.join(COLUMNS)
 DIVIDER = re.sub('[a-zA-Z]', '-', HEADER)
-DIVIDER_PAT = re.compile(r'\s*' + r"\s*\|\s*".join('-+') + r'\s*')
+DIVIDER_PAT = re.compile(r'\s*' + r"\s*\|\s*".join(['-+']*len(COLUMNS)) + r'\s*')
 
 class DefnItem:
     def __init__(self, txt):
@@ -56,7 +56,7 @@ class Defn:
         self.equivs.sort()
 
     def __str__(self):
-        return ' | '.join([str(e) for e in self.equivs])
+        return ' / '.join([str(e) for e in self.equivs])
     
 class SearchExpr:
     def __init__(self, expr):
@@ -88,14 +88,14 @@ class SearchExpr:
 class Entry:
     def __init__(self, fields):
         if isinstance(fields, str):
-            fields = fields.split('|')
+            fields = [f.strip() for f in fields.split('|')]
         self.lexeme = fields[0]
         self.pos = fields[1]
         self.defn = Defn(fields[2])
-        if len(fields) > 3 and self.fields[3]:
+        if len(fields) > 3 and fields[3]:
             self.notes = fields[3]
         else:
-            self.notes = None
+            self.notes = ''
 
     def __lt__(self, other):
         return self.lexeme < other.lexeme
@@ -104,32 +104,66 @@ class Entry:
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
         return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + self.defn + suffix
 
+def _is_header(entry: Entry) -> bool:
+    return entry.lexeme == COLUMNS[0]
+
+_DIVIDER_LEX_PAT = re.compile('-{2,}$')
+def _is_divider(entry: Entry) -> bool:
+    return _DIVIDER_LEX_PAT.match(entry.lexeme)
+
 class Glossary:
     def __init__(self):
+        self.pre = ''
         self.fname = None
-        self._lexeme_to_en = []
+        self._lexeme_to_gloss = []
         self._unsaved = False
-        self._en_to_lang = []
+        self._gloss_to_lexeme = []
+        self.post = ''
 
     @property
     def lexeme_count(self):
-        return len(self._lexeme_to_en)
+        return len(self._lexeme_to_gloss)
 
     @staticmethod
     def load(fname):
         g = Glossary()
         g.fname = os.path.normpath(os.path.abspath(fname))
         with open(g.fname, 'rt') as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = f.readlines()
+        pre = True
+        found_header = False
+        found_divider = False
         n = 0
         for line in lines:
+            stripped = line.strip()
             n += 1
-            if line:
+            entry = '|' in stripped
+            if entry:
+                e = None
                 try:
-                    g._lexeme_to_en.append(Entry(line))
-                except:
-                    print(f"Couldn't parse line {n}: {line}")
-        g._lexeme_to_en.sort()
+                    e = Entry(stripped)
+                    pre = False
+                except Exception as ex:
+                    entry = False
+                    if g.lexeme_count:
+                        pre = False
+                if e:
+                    if _is_header(e):
+                        if found_header or found_divider:
+                            raise Exception("Didn't expect header on line {n}.")
+                        found_header = True
+                    elif _is_divider(e):
+                        if found_divider:
+                            raise Exception("Didn't expect divider on line {n}.")
+                        found_divider = True
+                    else:
+                        g._lexeme_to_gloss.append(e)
+            if not entry:
+                if pre:
+                    g.pre += line
+                else:
+                    g.post += line
+        g._lexeme_to_gloss.sort()
         return g
     
     def save(self, fname=None):
@@ -154,9 +188,9 @@ class Glossary:
         hits = []
         expr = SearchExpr(expr)
         initial_search = expr.starter
-        index = bisect.bisect_left(self._lexeme_to_en, initial_search, key=lambda x: x.lexeme) if initial_search else 0
+        index = bisect.bisect_left(self._lexeme_to_gloss, initial_search, key=lambda x: x.lexeme) if initial_search else 0
         while index < self.lexeme_count and max_hits != 0:
-            entry = self._lexeme_to_en[index]
+            entry = self._lexeme_to_gloss[index]
             if expr.matches(entry.lexeme):
                 hits.append(entry)
                 max_hits -= 1
@@ -168,7 +202,7 @@ class Glossary:
         expr = SearchExpr(expr)
         index = 0
         while index < self.lexeme_count and max_hits != 0:
-            entry = self._lexeme_to_en[index]
+            entry = self._lexeme_to_gloss[index]
             defn = entry.defn
             for item in entry.defn.equivs:
                 if expr.matches(item.value):
@@ -179,6 +213,6 @@ class Glossary:
         
     def insert(self, lexeme, pos, defn, notes=None):
         e = Entry((lexeme, pos, defn, notes))
-        index = bisect.bisect_left(self._lexeme_to_en, lexeme, key=lambda x: x.lexeme)
-        self._lexeme_to_en.insert(index, e)
+        index = bisect.bisect_left(self._lexeme_to_gloss, lexeme, key=lambda x: x.lexeme)
+        self._lexeme_to_gloss.insert(index, e)
         self._unsaved = True
