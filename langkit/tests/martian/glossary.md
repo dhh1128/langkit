@@ -18,5 +18,5 @@ pickle|n|a cucumber soaked in vinegar | python's serialization algorithm
 fry|v|to cook in hot oil
 
 
-# A sectiona after glossary
+# A section after glossary
 some stuff after a glossary

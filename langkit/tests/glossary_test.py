@@ -1,11 +1,17 @@
 from ..glossary import *
 
+import io
 import os
 import random
 
 SAMPLE_GLOSS_PATH = os.path.join(os.path.dirname(__file__), 'martian', 'glossary.txt')
-SAMPLE_MD_GLOSS_PATH = SAMPLE_GLOSS_PATH.replace('.txt', '.md')
 g = Glossary.load(SAMPLE_GLOSS_PATH)
+
+SAMPLE_MD_GLOSS_PATH = SAMPLE_GLOSS_PATH.replace('.txt', '.md')
+g_md = Glossary.load(SAMPLE_MD_GLOSS_PATH)
+MD_PRE = "# A glossary\n\na paragraph of text\n* some stuff\n* some more stuff\n\n## Glossary"
+MD_POST = "# A section after glossary\nsome stuff after a glossary"
+
 
 def assert_di(x, kind, txt=None):
     di = DefnItem(x)
@@ -50,9 +56,30 @@ def test_load():
     assert g._lexeme_to_gloss[2].lexeme == 'fry' # prove entries are sorted
 
 def test_load_markdown():
-    g = Glossary.load(SAMPLE_MD_GLOSS_PATH)
-    assert len(g._lexeme_to_gloss) == 6
-    assert g._lexeme_to_gloss[2].lexeme == 'fry' # prove entries are sorted
+    assert len(g_md._lexeme_to_gloss) == 6
+    assert g_md._lexeme_to_gloss[2].lexeme == 'fry'
+    assert g_md.pre.find(MD_PRE) > -1
+    assert g_md.post.find(MD_POST) > -1
+
+def test_save_simple():
+    buf = io.StringIO()
+    g.save(handle=buf)
+    output = buf.getvalue()
+    assert HEADER in output
+    assert DIVIDER in output
+    i = output.find('fry |')
+    j = output.find('swallow |')
+    assert i > -1
+    assert j > -1
+    assert i < j
+
+def test_save_markdown():
+    buf = io.StringIO()
+    g_md.save(handle=buf)
+    txt = buf.getvalue()
+    assert txt.find(MD_PRE) > -1
+    assert txt.find(MD_POST) > -1
+    assert txt.find("sweet | a | ~having a sugary flavor") > -1
 
 def test_find_lexeme_simple():
     assert g.find_lexeme('fry')

@@ -102,7 +102,7 @@ class Entry:
 
     def __str__(self):
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
-        return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + self.defn + suffix
+        return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
 
 def _is_header(entry: Entry) -> bool:
     return entry.lexeme == COLUMNS[0]
@@ -133,6 +133,7 @@ class Glossary:
         pre = True
         found_header = False
         found_divider = False
+        found_nonblank_post = False
         n = 0
         for line in lines:
             stripped = line.strip()
@@ -150,24 +151,29 @@ class Glossary:
                 if e:
                     if _is_header(e):
                         if found_header or found_divider:
-                            raise Exception("Didn't expect header on line {n}.")
+                            raise Exception(f"Didn't expect header on line {n}.")
                         found_header = True
                     elif _is_divider(e):
-                        if found_divider:
-                            raise Exception("Didn't expect divider on line {n}.")
+                        if found_divider or not found_header:
+                            raise Exception(f"Didn't expect divider on line {n}.")
                         found_divider = True
                     else:
+                        if found_nonblank_post:
+                            raise Exception(f"Didn't expect a new entry on line {n}.")
                         g._lexeme_to_gloss.append(e)
+                        g.post = ''
             if not entry:
                 if pre:
                     g.pre += line
                 else:
+                    if line.strip():
+                        found_nonblank_post = True
                     g.post += line
         g._lexeme_to_gloss.sort()
         return g
     
-    def save(self, fname=None):
-        force = False
+    def save(self, fname=None, handle=None):
+        force = bool(handle)
         if fname is None:
             fname = self.fname
         else:
@@ -177,11 +183,22 @@ class Glossary:
             else:
                 force = fname != self.fname
         if force or self._unsaved:
-            with open(fname, 'wt') as f:
-                for entry in self.sorted_entries:
+            f = handle
+            if not f:
+                f = open(fname, 'wt')
+            try:
+                if self.pre.strip():
+                    f.write(self.pre)
+                f.write(HEADER + '\n' + DIVIDER + '\n')
+                for entry in self._lexeme_to_gloss:
                     f.write(str(entry) + '\n')
+                if self.post.strip():
+                    f.write(self.post)
                 if not force:
                     self._unsaved = False
+            finally:
+                if not handle:
+                    f.close()
             return True
 
     def find_lexeme(self, expr, max_hits=5):

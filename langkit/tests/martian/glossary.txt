@@ -1,3 +1,5 @@
+lexeme | pos | definition | notes
+--- | --- | --- | ---
 apple|n|a red fruit / >jonathan
 banana|n|a yellow fruit
 swallow|v|:to move food from mouth to stomach
