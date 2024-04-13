@@ -103,6 +103,15 @@ class Entry:
     def __str__(self):
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
         return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
+    
+    @property
+    def pretty(self):
+        txt = self.lexeme + f" ({self.pos}):\n"
+        for equiv in self.defn.equivs:
+            txt += '    ' + str(equiv) + '\n'
+        if self.notes:
+            txt += '    -- ' + self.notes
+        return txt
 
 def _is_header(entry: Entry) -> bool:
     return entry.lexeme == COLUMNS[0]

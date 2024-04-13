@@ -1,13 +1,13 @@
 from ..commands import PLUGINS
 
 
-def cmd(args=None):
+def cmd(_, args=None):
     """
     [cmd] - display general help, or display help on a specific command
     """
 
     print("""
-langtool -- develop artifacts for artificial languages
+lk -- develop artifacts for artificial languages
           
 Available commands
 """)
@@ -19,5 +19,5 @@ Available commands
         doc = func.__doc__.strip()
         i = doc.find('-')
         syntax, doc = doc[:i].rstrip(), doc[i+1:].lstrip()
-        print("  langtool %s %s\n      %s\n" % (name, syntax, doc))
+        print("  lk lang %s %s\n      %s\n" % (name, syntax, doc))
 

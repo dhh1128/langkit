@@ -4,23 +4,7 @@ import json
 from .glossary import Glossary
 
 CFG_NAME = 'cfg.json'
-GLOSSARY_NAME = 'glossary.txt'
-
-def _FIXgenerate_syllables(pattern, vowels, consonants):
-    i = pattern.find('V')
-    if i > -1:
-        for V in vowels:
-            for result in _FIXgenerate_syllables(pattern[:i] + V + pattern[i + 1:], vowels, consonants):
-                yield result
-    else:
-        i = pattern.find('C')
-        if i > -1:
-            for C in consonants:
-                for result in _FIXgenerate_syllables(pattern[:i] + C + pattern[i + 1:], vowels, consonants):
-                    yield result
-        else:
-            yield pattern
-
+GLOSSARY_NAME = 'glossary.md'
 
 class Lang:
     def __init__(self, path):
@@ -32,10 +16,18 @@ class Lang:
                 self.cfg = json.loads(f.read())
         else:
             self.cfg = {}
-        if os.path.isfile(self.gloss_path):
-            self.glossary = Glossary.load(self.gloss_path)
-        else:
-            self.glossary = Glossary()
+        self._glossary = None
+
+    @property
+    def glossary(self):
+        if not self._glossary:
+            fname = self.gloss_path
+            if os.path.isfile(fname):
+                self._glossary = Glossary.load(fname)
+            else:
+                self._glossary = Glossary()
+                self._glossary = fname
+        return self._glossary
 
     @property
     def cfg_path(self):
