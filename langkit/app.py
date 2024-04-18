@@ -1,8 +1,10 @@
 import os
 import sys
+import traceback
 
 from .commands import help, PLUGINS
 from .lang import Lang
+from .ui import *
 
 
 def help(cmd=None):
@@ -15,7 +17,7 @@ Available commands
         doc = func.__doc__.strip()
         i = doc.find('-')
         syntax, doc = doc[:i].rstrip(), doc[i+1:].lstrip()
-        print("  lk LANGDIR %s %s\n      %s\n" % (name, syntax, doc))
+        print(f"  lk LANGDIR {name} {syntax}\n      {doc}\n")
     print("  lk help [cmd]\n      display general help, or help on a specific command\n")
 
 def match_command(which):
@@ -45,7 +47,8 @@ def main(argv = None):
             sys.stdout.write('\n')
             sys.exit(0)
         except Exception as e:
-            print(str(e))
+            err = traceback.format_exc()
+            cprint(err, ERROR_COLOR)
             show_help = True
     if show_help:
         help()

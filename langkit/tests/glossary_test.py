@@ -48,6 +48,8 @@ def test_DefnItem_sort():
 
 def test_Defn_multi():
     defn = Defn('~def/ <a/> bc / :something/ another something')
+    assert len(defn.equivs) == 5
+    # Should render in different order, with all spacing canonicalized
     assert str(defn) == "another something / >bc / <a / ~def / :something"
 
 def test_load():

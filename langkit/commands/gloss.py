@@ -1,83 +1,80 @@
-import json
-import sys
+from ..ui import *
 
-def wrap_line_with_indent(text, width):
-    lines = []
-    text = text.rstrip()
-    if text:
-        for i in range(len(text)):
-            if text[i] != ' ':
-                break
-        if i > 0:
-            indent = ' ' * i
-        while len(text) > width:
-            space_index = text.rfind(' ', 0, width)
-            if space_index == -1:
-                # If no space found within width, just split at width
-                lines.append(text[:width])
-                text = indent + text[width:]
-            else:
-                lines.append(text[:space_index].rstrip())
-                text = indent + text[space_index + 1:]
-        lines.append(text)
-    return '\n'.join(lines)
+LEX_COLOR = 'yellow'
+POS_COLOR = 'red'
+NOTE_COLOR = 'green'
+EQUIV_COLOR = 'blue'
 
-def wrap_text_with_indent(text, width):
-    wrapped = []
-    lines = text.split('\n')
-    for line in lines:
-        wrapped.append(wrap_line_with_indent(line, width))
-    return '\n'.join(wrapped)
-
-def display(hits):
+def show_hits(hits):
     if hits:
         i = 1
         for hit in hits:
-            sys.stdout.write(f"\n{i}. " + wrap_text_with_indent(hit.pretty, 79) + '\n')
+            cwrite(f"\n{i}", PROMPT_COLOR)
+            write(". ")
+            cwrite(hit.lexeme, LEX_COLOR)
+            write(" (")
+            cwrite(hit.pos, POS_COLOR)
+            write(")\n")
+            for equiv in hit.defn.equivs:
+                cwrite('   * ', EQUIV_COLOR)
+                print(equiv)
+            if hit.notes:
+                cprint(wrap_line_with_indent('   # ' + hit.notes), NOTE_COLOR)
+            print('')
             i += 1
     else:
         print("Nothing found.")
 
-
-def prompt(txt):
-    sys.stdout.write(f"{txt} > ")
-    return input().strip()
-
 def add(g):
-    lex = prompt("lexeme?")
-    pos = prompt("pos?")
-    defn = prompt("definition?")
-    hits = g.find_defn(defn.replace(' ', '*'))
-    if hits:
-        display(hits)
-        answer = prompt("There may already be a synonym. Continue? y/N").lower()
-        if not answer or not "yes".startswith(answer):
-            print("Canceled add.")
-            return
-    notes = prompt("notes?")
-    g.insert(lex, pos, defn, notes)
-    g.save()
-    print(f"{g.lexeme_count} items in glossary.")
+    added = False
+    lex = prompt("  lexeme?")
+    if lex:
+        pos = prompt("  pos?")
+        if pos:
+            defn = prompt("  definition?")
+            if defn:
+                hits = g.find_defn(defn.replace(' ', '*'))
+                if hits:
+                    display(hits)
+                    answer = prompt("There may already be a synonym. Continue? y/N", WARNING_COLOR).lower()
+                    if answer and "yes".startswith(answer):
+                        hits = None
+                if not hits:
+                    notes = prompt("  notes?")
+                    g.insert(lex, pos, defn, notes)
+                    g.save()
+                    added = True
+    if added:
+        print(f"Added {lex}.")
+        show_stats(g)
+    else:
+        print("Nothing added.")
 
 def remind_syntax():
     print('lex <expr>, def <expr>, add, quit')
+
+def show_stats(g):
+    keys = sorted(g.stats.keys(), reverse=True)
+    keys.remove('entries')
+    keys.insert(0, 'entries')
+    stats = ', '.join([f"{key}: {g.stats[key]}" for key in keys])
+    print(wrap_line_with_indent(stats))
 
 def cmd(lang, *args):
     """
     - work with glossary
     """
     g = lang.glossary
-    print(f"{g.lexeme_count} items in glossary.")
+    show_stats(g)
     remind_syntax()
     while True:
-        sys.stdout.write('> ')
-        args = input().strip().split()
+        args = prompt('>').strip().split()
         if args:
             cmd = args[0].lower()
             if "lex".startswith(cmd):
-                display(g.find_lexeme(args[1]))
+                show_hits(g.find_lexeme(args[1]))
             elif "def".startswith(cmd):
-                display(g.find_defn(args[1]))
+                show_hits(g.find_defn(args[1]))
             elif "add".startswith(cmd):
                 add(g)
             elif "quit".startswith(cmd):

@@ -8,7 +8,7 @@ ROUGH_EQUIV = '~'
 EXPLAINED_EQUIV = ':'
 EXACT_EQUIV = ''
 EQUIV_CHARS = NARROWER_EQUIV + BROADER_EQUIV + ROUGH_EQUIV + EXPLAINED_EQUIV
-EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])(.+?)(/|$)')
+EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])?(.+?)(/|$)')
 COLUMNS = ['lexeme', 'pos', 'definition', 'notes']
 COLUMN_COUNT = len(COLUMNS)
 COLUMN_SEP = ' | '
@@ -48,7 +48,8 @@ class Defn:
         while txt:
             m = EQUIVS_PAT.match(txt)
             if m:
-                self.equivs.append(DefnItem(m.group(1) + m.group(2).strip()))
+                prefix = m.group(1) if m.group(1) else ''
+                self.equivs.append(DefnItem(prefix + m.group(2).strip()))
                 txt = txt[m.end():]
             else:
                 self.equivs.append(DefnItem(txt))
@@ -104,15 +105,6 @@ class Entry:
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
         return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
     
-    @property
-    def pretty(self):
-        txt = self.lexeme + f" ({self.pos}):\n"
-        for equiv in self.defn.equivs:
-            txt += '    ' + str(equiv) + '\n'
-        if self.notes:
-            txt += '    -- ' + self.notes
-        return txt
-
 def _is_header(entry: Entry) -> bool:
     return entry.lexeme == COLUMNS[0]
 
@@ -128,7 +120,30 @@ class Glossary:
         self._unsaved = False
         self._gloss_to_lexeme = []
         self.post = ''
+        self._stats = None
 
+    @property
+    def stats(self):
+        if self._stats is None:
+            def increment(accumulator, key, how_much=1):
+                if not key in accumulator:
+                    accumulator[key] = 0
+                accumulator[key] += how_much
+            def tally_defs():
+                x = {}
+                for entry in self._lexeme_to_gloss:
+                    increment(x, "defs", len(entry.defn.equivs))
+                    increment(x, entry.pos)
+                    for equiv in entry.defn.equivs:
+                        kind = equiv.kind
+                        if not kind:
+                            kind = "exact equiv"
+                        increment(x, kind)
+                return x
+            self._stats = tally_defs()
+            self._stats["entries"] = len(self._lexeme_to_gloss)
+        return self._stats
+    
     @property
     def lexeme_count(self):
         return len(self._lexeme_to_gloss)
