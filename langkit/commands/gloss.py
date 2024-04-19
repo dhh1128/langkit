@@ -35,13 +35,16 @@ def show_hits(hits, g):
 def offer_entry_actions(hits, g):
     write('\n')
     args = prompt_options('edit #, del #').split()
-    if args:
-        cmd = args[0]
-        index = int(args[1]) - 1
-        if input_matches(cmd, "edit"):
-            edit(hits[index], g)
-        elif input_matches(cmd, "del"):
-            delete(hits[index], g)
+    try:
+        if args:
+            cmd = args[0]
+            index = int(args[1]) - 1
+            if input_matches(cmd, "edit"):
+                edit(hits[index], g)
+            elif input_matches(cmd, "del"):
+                delete(hits[index], g)
+    except:
+        warn("Bad command.")
         
 def delete(entry, g):
     g.entries.remove(entry)
@@ -76,6 +79,7 @@ def edit(entry, g):
                 changed = True
             entry.notes = new
         if changed:
+            g.save(force=True)
             print("\nUpdated entry.")
         else:
             print("\nNo changes.")

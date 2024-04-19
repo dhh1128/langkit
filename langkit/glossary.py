@@ -195,8 +195,8 @@ class Glossary:
         g.entries.sort()
         return g
     
-    def save(self, fname=None, handle=None):
-        force = bool(handle)
+    def save(self, fname=None, handle=None, force: bool=False):
+        force = force or bool(handle)
         if fname is None:
             fname = self.fname
         else:
