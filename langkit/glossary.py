@@ -225,31 +225,42 @@ class Glossary:
                     f.close()
             return True
 
-    def find_lexeme(self, expr, max_hits=5):
+    def find_lexeme(self, expr, max_hits=5, exclude=None):
         hits = []
-        expr = SearchExpr(expr)
+        s_expr = SearchExpr(expr)
         initial_search = expr.starter
         index = bisect.bisect_left(self._lexeme_to_gloss, initial_search, key=lambda x: x.lexeme) if initial_search else 0
         while index < self.lexeme_count and max_hits != 0:
             entry = self._lexeme_to_gloss[index]
-            if expr.matches(entry.lexeme):
-                hits.append(entry)
-                max_hits -= 1
+            if s_expr.matches(entry.lexeme):
+                if not exclude or (entry not in exclude):
+                    hits.append(entry)
+                    max_hits -= 1
             index += 1
+        # Now that we've found hits that start with expr, look
+        # for ones that just contain it.
+        if max_hits and not expr.startswith('*'):
+            hits += self.find_lexeme('*' + expr, max_hits, hits)
+
         return hits
     
-    def find_defn(self, expr, max_hits=5):
+    def find_defn(self, expr, max_hits=5, exclude=None):
         hits = []
-        expr = SearchExpr(expr)
+        s_expr = SearchExpr(expr)
         index = 0
         while index < self.lexeme_count and max_hits != 0:
             entry = self._lexeme_to_gloss[index]
             defn = entry.defn
             for item in entry.defn.equivs:
-                if expr.matches(item.value):
-                    hits.append(entry)
-                    max_hits -= 1
+                if s_expr.matches(item.value):
+                    if not exclude or (entry not in exclude):
+                        hits.append(entry)
+                        max_hits -= 1
             index += 1
+        # Now that we've found hits that start with expr, look
+        # for ones that just contain it.
+        if max_hits and not expr.startswith('*'):
+            hits += self.find_defn('*' + expr, max_hits, hits)
         return hits
         
     def insert(self, lexeme, pos, defn, notes=None):

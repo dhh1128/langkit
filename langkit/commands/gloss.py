@@ -17,10 +17,10 @@ def show_hits(hits):
             write(")")
             for equiv in hit.defn.equivs:
                 cwrite('\n   * ', EQUIV_COLOR)
-                print(equiv)
+                write(equiv)
             if hit.notes:
-                cwrite('\n')
-                cprint(wrap_line_with_indent('   # ' + hit.notes), NOTE_COLOR)
+                write('\n')
+                cwrite(wrap_line_with_indent('   # ' + hit.notes), NOTE_COLOR)
             print('')
             i += 1
     else:
@@ -28,34 +28,34 @@ def show_hits(hits):
 
 def add(g):
     added = False
-    lex = prompt("  lexeme?")
+    lex = prompt("  lexeme?").strip()
     if lex:
-        hits = g.find_lexeme("*" + lex)
+        hits = g.find_lexeme(lex)
         if hits:
             show_hits(hits)
             answer = prompt("Similar words exist. Continue? y/N", WARNING_COLOR).lower()
             if answer and "yes".startswith(answer):
                 hits = None
         if not hits:
-            pos = prompt("  pos?")
+            pos = prompt("  pos?").strip()
             if pos:
-                defn = prompt("  definition?")
+                defn = prompt("  definition?").strip()
                 if defn:
-                    hits = g.find_defn('*' + defn.replace(' ', '*'))
+                    hits = g.find_defn(defn.replace(' ', '*'))
                     if hits:
                         show_hits(hits)
                         answer = prompt("There may already be a synonym. Continue? y/N", WARNING_COLOR).lower()
                         if answer and "yes".startswith(answer):
                             hits = None
                     if not hits:
-                        notes = prompt("  notes?")
+                        notes = prompt("  notes?").strip()
                         g.insert(lex, pos, defn, notes)
                         g.save()
                         added = True
     if added:
-        cwrite("Added ")
+        write("Added ")
         cwrite(lex, LEX_COLOR)
-        cwrite('.\n\n')
+        write('.\n\n')
         show_stats(g)
     else:
         print("Nothing added.")
@@ -78,7 +78,7 @@ def cmd(lang, *args):
     show_stats(g)
     remind_syntax()
     while True:
-        args = prompt('>').strip().split()
+        args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
             if "lex".startswith(cmd):
