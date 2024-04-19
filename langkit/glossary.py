@@ -228,7 +228,7 @@ class Glossary:
     def find_lexeme(self, expr, max_hits=5, exclude=None):
         hits = []
         s_expr = SearchExpr(expr)
-        initial_search = expr.starter
+        initial_search = s_expr.starter
         index = bisect.bisect_left(self._lexeme_to_gloss, initial_search, key=lambda x: x.lexeme) if initial_search else 0
         while index < self.lexeme_count and max_hits != 0:
             entry = self._lexeme_to_gloss[index]
