@@ -108,7 +108,27 @@ def cwrite(text, color):
 def write(text):
     print(text, end='')
 
-def prompt(txt, color=PROMPT_COLOR):
-    cwrite(txt + ' ', color)
-    return input()
+def prompt(txt, color=PROMPT_COLOR, strip=True):
+    txt += ' '
+    if color: 
+        cwrite(txt, color)
+    else:
+        write(txt)
+    response = input()
+    if strip: response = response.strip()
+    return response
+
+def prompt_options(cmds):
+    write(cmds)
+    return prompt('>')
+
+def warn(text):
+    cprint(text, WARNING_COLOR)
+
+def warn_confirm(question):
+    response = prompt(question + " y/N", WARNING_COLOR).strip().lower()
+    return input_matches(response, "yes")
+
+def input_matches(response, constant):
+    return constant.startswith(response.lower())
 

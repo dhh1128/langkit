@@ -54,12 +54,12 @@ def test_Defn_multi():
 
 def test_load():
     # prove basic loading and that empty lines are ignored
-    assert len(g._lexeme_to_gloss) == 6
-    assert g._lexeme_to_gloss[2].lexeme == 'fry' # prove entries are sorted
+    assert len(g.entries) == 6
+    assert g.entries[2].lexeme == 'fry' # prove entries are sorted
 
 def test_load_markdown():
-    assert len(g_md._lexeme_to_gloss) == 6
-    assert g_md._lexeme_to_gloss[2].lexeme == 'fry'
+    assert len(g_md.entries) == 6
+    assert g_md.entries[2].lexeme == 'fry'
     assert g_md.pre.find(MD_PRE) > -1
     assert g_md.post.find(MD_POST) > -1
 

@@ -116,9 +116,8 @@ class Glossary:
     def __init__(self):
         self.pre = ''
         self.fname = None
-        self._lexeme_to_gloss = []
+        self.entries = []
         self._unsaved = False
-        self._gloss_to_lexeme = []
         self.post = ''
         self._stats = None
 
@@ -131,7 +130,7 @@ class Glossary:
                 accumulator[key] += how_much
             def tally_defs():
                 x = {}
-                for entry in self._lexeme_to_gloss:
+                for entry in self.entries:
                     increment(x, "defs", len(entry.defn.equivs))
                     increment(x, entry.pos)
                     for equiv in entry.defn.equivs:
@@ -141,12 +140,12 @@ class Glossary:
                         increment(x, kind)
                 return x
             self._stats = tally_defs()
-            self._stats["entries"] = len(self._lexeme_to_gloss)
+            self._stats["entries"] = len(self.entries)
         return self._stats
     
     @property
     def lexeme_count(self):
-        return len(self._lexeme_to_gloss)
+        return len(self.entries)
 
     @staticmethod
     def load(fname):
@@ -184,7 +183,7 @@ class Glossary:
                     else:
                         if found_nonblank_post:
                             raise Exception(f"Didn't expect a new entry on line {n}.")
-                        g._lexeme_to_gloss.append(e)
+                        g.entries.append(e)
                         g.post = ''
             if not entry:
                 if pre:
@@ -193,7 +192,7 @@ class Glossary:
                     if line.strip():
                         found_nonblank_post = True
                     g.post += line
-        g._lexeme_to_gloss.sort()
+        g.entries.sort()
         return g
     
     def save(self, fname=None, handle=None):
@@ -214,7 +213,7 @@ class Glossary:
                 if self.pre.strip():
                     f.write(self.pre)
                 f.write(HEADER + '\n' + DIVIDER + '\n')
-                for entry in self._lexeme_to_gloss:
+                for entry in self.entries:
                     f.write(str(entry) + '\n')
                 if self.post.strip():
                     f.write(self.post)
@@ -225,13 +224,14 @@ class Glossary:
                     f.close()
             return True
 
-    def find_lexeme(self, expr, max_hits=5, exclude=None):
+    def find_lexeme(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
         hits = []
         s_expr = SearchExpr(expr)
         initial_search = s_expr.starter
-        index = bisect.bisect_left(self._lexeme_to_gloss, initial_search, key=lambda x: x.lexeme) if initial_search else 0
+        index = bisect.bisect_left(self.entries, initial_search, key=lambda x: x.lexeme) \
+            if initial_search else 0
         while index < self.lexeme_count and max_hits != 0:
-            entry = self._lexeme_to_gloss[index]
+            entry = self.entries[index]
             if s_expr.matches(entry.lexeme):
                 if not exclude or (entry not in exclude):
                     hits.append(entry)
@@ -239,17 +239,17 @@ class Glossary:
             index += 1
         # Now that we've found hits that start with expr, look
         # for ones that just contain it.
-        if max_hits and not expr.startswith('*'):
+        if try_fuzzy and max_hits and not expr.startswith('*'):
             hits += self.find_lexeme('*' + expr, max_hits, hits)
 
         return hits
     
-    def find_defn(self, expr, max_hits=5, exclude=None):
+    def find_defn(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
         hits = []
         s_expr = SearchExpr(expr)
         index = 0
         while index < self.lexeme_count and max_hits != 0:
-            entry = self._lexeme_to_gloss[index]
+            entry = self.entries[index]
             defn = entry.defn
             for item in entry.defn.equivs:
                 if s_expr.matches(item.value):
@@ -259,13 +259,13 @@ class Glossary:
             index += 1
         # Now that we've found hits that start with expr, look
         # for ones that just contain it.
-        if max_hits and not expr.startswith('*'):
+        if try_fuzzy and max_hits and not expr.startswith('*'):
             hits += self.find_defn('*' + expr, max_hits, hits)
         return hits
         
-    def insert(self, lexeme, pos, defn, notes=None):
-        e = Entry((lexeme, pos, defn, notes))
-        index = bisect.bisect_left(self._lexeme_to_gloss, lexeme, key=lambda x: x.lexeme)
-        self._lexeme_to_gloss.insert(index, e)
+    def insert(self, entry: Entry):
+        index = bisect.bisect_left(self.entries, entry.lexeme, key=lambda x: x.lexeme)
+        self.entries.insert(index, entry)
         self._unsaved = True
         self._stats = None
+

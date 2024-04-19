@@ -1,55 +1,109 @@
 from ..ui import *
+from ..glossary import Entry
 
 LEX_COLOR = 'yellow'
 POS_COLOR = 'red'
 NOTE_COLOR = 'green'
 EQUIV_COLOR = 'blue'
 
-def show_hits(hits):
+def show_entry(e, idx=None):
+    if idx:
+        cwrite(f"\n{idx}", PROMPT_COLOR)
+        write(". ")
+    cwrite(e.lexeme, LEX_COLOR)
+    write(" (")
+    cwrite(e.pos, POS_COLOR)
+    write(")")
+    for equiv in e.defn.equivs:
+        cwrite('\n   * ', EQUIV_COLOR)
+        write(equiv)
+    if e.notes:
+        write('\n')
+        cwrite(wrap_line_with_indent('   # ' + e.notes), NOTE_COLOR)
+    print('')
+
+def show_hits(hits, g):
     if hits:
         i = 1
         for hit in hits:
-            cwrite(f"\n{i}", PROMPT_COLOR)
-            write(". ")
-            cwrite(hit.lexeme, LEX_COLOR)
-            write(" (")
-            cwrite(hit.pos, POS_COLOR)
-            write(")")
-            for equiv in hit.defn.equivs:
-                cwrite('\n   * ', EQUIV_COLOR)
-                write(equiv)
-            if hit.notes:
-                write('\n')
-                cwrite(wrap_line_with_indent('   # ' + hit.notes), NOTE_COLOR)
-            print('')
+            show_entry(hit, i)
             i += 1
+        offer_entry_actions(hits, g)
     else:
         print("Nothing found.")
 
+def offer_entry_actions(hits, g):
+    write('\n')
+    args = prompt_options('edit #, del #').split()
+    if args:
+        cmd = args[0]
+        index = int(args[1]) - 1
+        if input_matches(cmd, "edit"):
+            edit(hits[index], g)
+        elif input_matches(cmd, "del"):
+            delete(hits[index], g)
+        
+def delete(entry, g):
+    g.entries.remove(entry)
+    print(f"Deleted {entry.lexeme}.")
+
+def edit(entry, g):
+    try:
+        changed = False
+        write('\n')
+        new = prompt_options(f"   lex: {entry.lexeme}")
+        if new: 
+            hits = g.find_lexeme(new)
+            if hits:
+                warn("Edit would overwrite {lex} entry that already exists.")
+                return
+            changed = entry.lexeme = new
+            # Since lexeme has changed, it may sort differently.
+            # Take it out of glossary entry list, then re-add it
+            # to maintain proper sort order.
+            g.entries.remove(entry)
+            g.insert(entry)
+        new = prompt_options(f"   pos: {entry.pos}")
+        if new: changed = entry.pos = new
+        new = prompt_options(f"   defn: {entry.defn}")
+        if new: changed = entry.defn = Defn(new)
+        new = prompt_options(f"   notes: {entry.notes} OR . for none")
+        if new:
+            if new == '.': 
+                new = ''
+                changed = bool(entry.notes)
+            else:
+                changed = True
+            entry.notes = new
+        if changed:
+            print("\nUpdated entry.")
+        else:
+            print("\nNo changes.")
+    except KeyboardInterrupt:
+        print("\n\nAbandoned edit.")
+
 def add(g):
     added = False
-    lex = prompt("  lexeme?").strip()
+    lex = prompt("  lex:").strip()
     if lex:
         hits = g.find_lexeme(lex)
         if hits:
             show_hits(hits)
-            answer = prompt("Similar words exist. Continue? y/N", WARNING_COLOR).lower()
-            if answer and "yes".startswith(answer):
+            if warn_confirm("Similar words exist. Continue?"):
                 hits = None
         if not hits:
-            pos = prompt("  pos?").strip()
+            pos = prompt("  pos:")
             if pos:
-                defn = prompt("  definition?").strip()
+                defn = prompt("  defn:")
                 if defn:
                     hits = g.find_defn(defn.replace(' ', '*'))
                     if hits:
                         show_hits(hits)
-                        answer = prompt("There may already be a synonym. Continue? y/N", WARNING_COLOR).lower()
-                        if answer and "yes".startswith(answer):
+                        if warn_confirm("There may already be a synonym. Continue?", WARNING_COLOR):
                             hits = None
                     if not hits:
-                        notes = prompt("  notes?").strip()
-                        g.insert(lex, pos, defn, notes)
+                        notes = prompt("  notes:")
+                        g.insert(Entry((lex, pos, defn, notes)))
                         g.save()
                         added = True
     if added:
@@ -61,7 +115,7 @@ def add(g):
         print("Nothing added.")
 
 def remind_syntax():
-    print('lex <expr>, def <expr>, add, quit')
+    print('lex <expr>, def <expr>, add, edit, quit')
 
 def show_stats(g):
     keys = sorted(g.stats.keys(), reverse=True)
@@ -81,13 +135,13 @@ def cmd(lang, *args):
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
-            if "lex".startswith(cmd):
-                show_hits(g.find_lexeme(args[1]))
-            elif "def".startswith(cmd):
-                show_hits(g.find_defn(args[1]))
-            elif "add".startswith(cmd):
+            if input_matches(cmd, "lex"):
+                show_hits(g.find_lexeme(args[1]), g)
+            elif input_matches(cmd, "def"):
+                show_hits(g.find_defn(args[1]), g)
+            elif input_matches(cmd, "add"):
                 add(g)
-            elif "quit".startswith(cmd):
+            elif input_matches(cmd, "quit"):
                 break
             else:
                 remind_syntax()
