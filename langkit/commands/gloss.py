@@ -14,11 +14,12 @@ def show_hits(hits):
             cwrite(hit.lexeme, LEX_COLOR)
             write(" (")
             cwrite(hit.pos, POS_COLOR)
-            write(")\n")
+            write(")")
             for equiv in hit.defn.equivs:
-                cwrite('   * ', EQUIV_COLOR)
+                cwrite('\n   * ', EQUIV_COLOR)
                 print(equiv)
             if hit.notes:
+                cwrite('\n')
                 cprint(wrap_line_with_indent('   # ' + hit.notes), NOTE_COLOR)
             print('')
             i += 1
@@ -29,23 +30,32 @@ def add(g):
     added = False
     lex = prompt("  lexeme?")
     if lex:
-        pos = prompt("  pos?")
-        if pos:
-            defn = prompt("  definition?")
-            if defn:
-                hits = g.find_defn(defn.replace(' ', '*'))
-                if hits:
-                    display(hits)
-                    answer = prompt("There may already be a synonym. Continue? y/N", WARNING_COLOR).lower()
-                    if answer and "yes".startswith(answer):
-                        hits = None
-                if not hits:
-                    notes = prompt("  notes?")
-                    g.insert(lex, pos, defn, notes)
-                    g.save()
-                    added = True
+        hits = g.find_lexeme("*" + lex)
+        if hits:
+            show_hits(hits)
+            answer = prompt("Similar words exist. Continue? y/N", WARNING_COLOR).lower()
+            if answer and "yes".startswith(answer):
+                hits = None
+        if not hits:
+            pos = prompt("  pos?")
+            if pos:
+                defn = prompt("  definition?")
+                if defn:
+                    hits = g.find_defn('*' + defn.replace(' ', '*'))
+                    if hits:
+                        show_hits(hits)
+                        answer = prompt("There may already be a synonym. Continue? y/N", WARNING_COLOR).lower()
+                        if answer and "yes".startswith(answer):
+                            hits = None
+                    if not hits:
+                        notes = prompt("  notes?")
+                        g.insert(lex, pos, defn, notes)
+                        g.save()
+                        added = True
     if added:
-        print(f"Added {lex}.")
+        cwrite("Added ")
+        cwrite(lex, LEX_COLOR)
+        cwrite('.\n\n')
         show_stats(g)
     else:
         print("Nothing added.")

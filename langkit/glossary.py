@@ -257,3 +257,4 @@ class Glossary:
         index = bisect.bisect_left(self._lexeme_to_gloss, lexeme, key=lambda x: x.lexeme)
         self._lexeme_to_gloss.insert(index, e)
         self._unsaved = True
+        self._stats = None
