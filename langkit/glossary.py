@@ -59,7 +59,7 @@ class Defn:
     def __str__(self):
         return ' / '.join([str(e) for e in self.equivs])
     
-class SearchExpr:
+class MatchExpr:
     def __init__(self, expr):
         self.expr = expr
         i = expr.find('*')
@@ -80,11 +80,35 @@ class SearchExpr:
         return self._i > -1
 
     @property
-    def starter(self):
+    def starter(self) -> str:
         return self.expr if self._i == -1 else self.expr[:self._i]
 
-    def matches(self, txt):
+    def matches(self, txt) -> bool:
         return self._regex.match(txt) if self._regex else (self.expr == txt)
+
+SCOPED_SEARCH_EXPR = re.compile(r'(?:^|\s)(l(?:e(?:x)?)?|p(?:o(?:s)?)?|d(?:e(?:f(?:n)?)?)?|n(?:o(?:t(?:e(?:s)?)?)?)?):')
+class SearchExpr:
+    def __init__(self, expr):
+        criteria = []
+        chunks = SCOPED_SEARCH_EXPR.split(expr)
+        # Accept text without a field prefix, and pretend it had one.
+        if ':' not in chunks[0]: chunks.insert(0, 'lex:')
+        i = 0
+        while i < len(chunks):
+            m = chunks[i + 1].strip()
+            if m:
+                criteria.append(chunks[i][0], MatchExpr(m))
+            i += 2
+        
+    def matches(self, entry: Entry) -> bool:
+        for field_selector, match_expr in self.criteria:
+            if field_selector == 'l': text = entry.lexeme
+            elif field_selector == 'p': text = entry.pos
+            elif field_selector == 'd': text = str(entry.defn)
+            else: text = entry.notes
+            if not match_expr.matches(text):
+                return False
+        return True
 
 class Entry:
     def __init__(self, fields):
@@ -224,7 +248,7 @@ class Glossary:
                     f.close()
             return True
 
-    def find_lexeme(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
+    def find(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
         hits = []
         s_expr = SearchExpr(expr)
         initial_search = s_expr.starter
@@ -244,25 +268,6 @@ class Glossary:
 
         return hits
     
-    def find_defn(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
-        hits = []
-        s_expr = SearchExpr(expr)
-        index = 0
-        while index < self.lexeme_count and max_hits != 0:
-            entry = self.entries[index]
-            defn = entry.defn
-            for item in entry.defn.equivs:
-                if s_expr.matches(item.value):
-                    if not exclude or (entry not in exclude):
-                        hits.append(entry)
-                        max_hits -= 1
-            index += 1
-        # Now that we've found hits that start with expr, look
-        # for ones that just contain it.
-        if try_fuzzy and max_hits and not expr.startswith('*'):
-            hits += self.find_defn('*' + expr, max_hits, hits)
-        return hits
-        
     def insert(self, entry: Entry):
         index = bisect.bisect_left(self.entries, entry.lexeme, key=lambda x: x.lexeme)
         self.entries.insert(index, entry)
