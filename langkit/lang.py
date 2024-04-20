@@ -26,7 +26,7 @@ class Lang:
                 self._glossary = Glossary.load(fname)
             else:
                 self._glossary = Glossary()
-                self._glossary = fname
+                self.path = os.path.dirname(fname)
         return self._glossary
 
     @property
