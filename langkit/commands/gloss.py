@@ -139,10 +139,8 @@ def cmd(lang, *args):
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
-            if input_matches(cmd, "lex"):
-                show_hits(g.find_lexeme(args[1]), g)
-            elif input_matches(cmd, "def"):
-                show_hits(g.find_defn(args[1]), g)
+            if input_matches(cmd, "find"):
+                show_hits(g.find(' '.join(args[1:])), g)
             elif input_matches(cmd, "add"):
                 add(g)
             elif input_matches(cmd, "quit"):
