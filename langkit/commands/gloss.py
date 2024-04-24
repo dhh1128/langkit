@@ -1,5 +1,5 @@
 from ..ui import *
-from ..glossary import Entry
+from ..glossary import Entry, Defn
 
 LEX_COLOR = 'yellow'
 POS_COLOR = 'red'
@@ -22,13 +22,14 @@ def show_entry(e, idx=None):
         cwrite(wrap_line_with_indent('   # ' + e.notes), NOTE_COLOR)
     print('')
 
-def show_hits(hits, g):
+def show_hits(hits, g, with_actions=True):
     if hits:
         i = 1
         for hit in hits:
             show_entry(hit, i)
             i += 1
-        offer_entry_actions(hits, g)
+        if with_actions:
+            offer_entry_actions(hits, g)
     else:
         print("Nothing found.")
 
@@ -56,7 +57,7 @@ def edit(entry, g):
         write('\n')
         new = prompt_options(f"   lex: {entry.lexeme}")
         if new: 
-            hits = g.find_lexeme(new)
+            hits = g.find(f'l:{new}', try_fuzzy=False)
             if hits:
                 warn("Edit would overwrite {lex} entry that already exists.")
                 return
@@ -88,11 +89,11 @@ def edit(entry, g):
 
 def add(g):
     added = False
-    lex = prompt("  lex:").strip()
+    lex = prompt_options("   lex").strip()
     if lex:
-        hits = g.find_lexeme(lex)
+        hits = g.find(f'l:{lex}', try_fuzzy=False)
         if hits:
-            show_hits(hits)
+            show_hits(hits, g, with_actions=False)
             if warn_confirm("Similar words exist. Continue?"):
                 hits = None
         if not hits:
@@ -100,10 +101,10 @@ def add(g):
             if pos:
                 defn = prompt_options("   defn")
                 if defn:
-                    hits = g.find_defn(defn.replace(' ', '*'))
+                    hits = g.find(f'd:{defn}')
                     if hits:
-                        show_hits(hits)
-                        if warn_confirm("There may already be a synonym. Continue?", WARNING_COLOR):
+                        show_hits(hits, g, with_actions=False)
+                        if warn_confirm("There may already be a synonym. Continue?"):
                             hits = None
                     if not hits:
                         notes = prompt_options("   notes")
@@ -139,10 +140,8 @@ def cmd(lang, *args):
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
-            if input_matches(cmd, "lex"):
-                show_hits(g.find_lexeme(args[1]), g)
-            elif input_matches(cmd, "def"):
-                show_hits(g.find_defn(args[1]), g)
+            if input_matches(cmd, "find"):
+                show_hits(g.find(' '.join(args[1:])), g)
             elif input_matches(cmd, "add"):
                 add(g)
             elif input_matches(cmd, "quit"):
