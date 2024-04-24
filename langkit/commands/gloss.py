@@ -96,9 +96,9 @@ def add(g):
             if warn_confirm("Similar words exist. Continue?"):
                 hits = None
         if not hits:
-            pos = prompt("  pos:")
+            pos = prompt_options("   pos")
             if pos:
-                defn = prompt("  defn:")
+                defn = prompt_options("   defn")
                 if defn:
                     hits = g.find_defn(defn.replace(' ', '*'))
                     if hits:
@@ -106,7 +106,7 @@ def add(g):
                         if warn_confirm("There may already be a synonym. Continue?", WARNING_COLOR):
                             hits = None
                     if not hits:
-                        notes = prompt("  notes:")
+                        notes = prompt_options("   notes")
                         g.insert(Entry((lex, pos, defn, notes)))
                         g.save()
                         added = True

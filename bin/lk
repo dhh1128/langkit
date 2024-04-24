@@ -3,10 +3,14 @@
 import os
 import sys
 
-# Add the python package to path so we can invoke it.
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from langkit.app import main
-
+# Try loading an installed python package. If not installed, load it
+# from path relative to this script.
+try:
+    from langkit.app import main
+except ModuleNotFoundError:
+    MY_FOLDER = os.path.normpath(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))
+    sys.path.insert(0, os.path.normpath(os.path.join(MY_FOLDER, '..')))
+    from langkit.app import main
 
 if __name__ == '__main__':
     try:
