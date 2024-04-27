@@ -103,7 +103,7 @@ def add():
             if pos:
                 defn = prompt_options("   defn")
                 if defn:
-                    hits = g.find(f'd:{defn}')
+                    hits = g.find(f'd:{defn}', try_fuzzy=False)
                     if hits:
                         show_hits(hits, with_number=False)
                         if warn_confirm("There may already be a synonym. Continue?"):
@@ -146,10 +146,13 @@ def cmd(lang, *args):
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
+            
+            # Tolerate a very short form, like e1 for edit 1
             m = SHORT_ENTRY_CMD_PAT.match(cmd)
             if m:
                 cmd = m.group(1)
-                args.insert(1, m.group(2)) 
+                args.insert(1, m.group(2))
+
             if input_matches(cmd, "find"):
                 find(' '.join(args[1:]))
                 if not show_hits():

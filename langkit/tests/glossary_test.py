@@ -14,11 +14,11 @@ MD_POST = "# A section after glossary\nsome stuff after a glossary"
 
 
 def test_MatchExpr():
-    def assert_me(text, starter, fwi):
+    def assert_me(text, starter, fw):
         me = MatchExpr(text)
         assert me.starter == starter
-        assert me.first_wildcard_index == fwi
-        assert bool(fwi > -1) == me.wildcarded
+        assert me.first_wildcard == fw
+        assert bool(fw > -1) == me.wildcarded
     assert_me("abc", "abc", -1)
     assert_me("ab*c", "ab", 2)
     assert_me("ab?c", "ab", 2)
@@ -31,6 +31,8 @@ def test_searchexpr():
         se = SearchExpr(expr)
         assert se.matches(entry)
     assert_matches("lex:abc")
+    assert_matches("lex:!abc")
+    assert_matches("lex:abc!")
     assert_matches("l:abc")
     assert_matches("pos:123")
     assert_matches("defn:*xyz")
@@ -53,11 +55,11 @@ def test_searchexpr_fuzzify():
         changed = se.fuzzify()
         assert str(se) == fuzzy_equiv
         assert changed == (original != fuzzy_equiv)
-    assert_fuzzy("lex:abc", "l:*abc*")
+    assert_fuzzy("lex:abc", "l:*!abc*")
     assert_fuzzy("pos:abc", "p:abc")
     assert_fuzzy("notes:?abc", "n:?abc*")
     assert_fuzzy("defn:?abc?", "d:?abc?")
-    assert_fuzzy("defn:abc xyz", "d:*abc*xyz*")
+    assert_fuzzy("defn:abc xyz", "d:*!abc*xyz*")
 
 
 def assert_di(x, kind, txt=None):

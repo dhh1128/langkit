@@ -104,33 +104,27 @@ _DIVIDER_LEX_PAT = re.compile('-{2,}$')
 def _is_divider(entry: Entry) -> bool:
     return _DIVIDER_LEX_PAT.match(entry.lexeme)
 
+
 class MatchExpr:
     def __init__(self, expr):
         self.expr = expr
-        i = expr.find('*')
-        j = expr.find('?')
-        if i > -1:
-            if j > -1:
-                self._i = min(i, j)
-            else:
-                self._i = i
-        elif j > -1:
-            self._i = j
-        else:
-            self._i = -1
-        self._regex = None if self._i == -1 else re.compile(expr.replace('?', '.').replace('*', '.*?'))
+        wildcards = [expr.find(c) for c in '*?!']
+        NO_WILDCARD = 1000000000
+        wc1 = NO_WILDCARD
+        for i in range(len(wildcards)):
+            if wildcards[i] > -1:
+                wc1 = min(wc1, wildcards[i])
+        self.first_wildcard = -1 if wc1 == NO_WILDCARD else wc1
+        self._regex = None if self.first_wildcard == -1 else re.compile(
+            expr.replace('?', '.').replace('*', '.*?').replace('!', r'\b'))
 
     @property
     def wildcarded(self):
-        return self._i > -1
+        return self.first_wildcard != -1
     
     @property
-    def first_wildcard_index(self):
-        return self._i
-
-    @property
     def starter(self) -> str:
-        return self.expr if self._i == -1 else self.expr[:self._i]
+        return self.expr[:self.first_wildcard] if self.wildcarded else self.expr
     
     def __str__(self):
         return self.expr
@@ -172,9 +166,11 @@ class SearchExpr:
             if field != 'p':
                 matcher = self.criteria[i][1]
                 expr = matcher.expr
-                if matcher.first_wildcard_index != 0:
-                    expr = '*' + expr
+                if matcher.first_wildcard != 0:
+                    expr = '*!' + expr
                 expr = expr.replace(' ', '*')
+                if expr[-1] not in '*?!':
+                    expr += '*'
                 if expr != matcher.expr:
                     changed = True
                     self.criteria[i] = (field, MatchExpr(expr))
