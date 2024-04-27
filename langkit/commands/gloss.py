@@ -88,7 +88,7 @@ def add():
     added = False
     lex = prompt_options("   lex").strip()
     if lex:
-        hits = g.find(f'l:{lex}!', try_fuzzy)
+        hits = g.find(f'l:{lex}!')
         if hits:
             show_hits(hits, with_number=False)
             if warn_confirm("Similar words exist. Continue?"):

@@ -139,9 +139,14 @@ class TranslationCoach:
                     approx = False
                     lk_pos = find_by_nltk(pos)
                     if lk_pos and lk_pos.lk:
-                        expr = f'p:{lk_pos.lk} d:{tag[0]}'
-                        entry = self._find(expr)
-                        pos = lk_pos.lk
+                        # We might have more than one POS for a given nltk category;
+                        # try them all until we find a match.
+                        for x in lk_pos.lk.split():
+                            pos = x
+                            expr = f'p:{x} d:{tag[0]}'
+                            entry = self._find(expr)
+                            if entry:
+                                break
                     if not entry:
                         # Try looking up the exact word, without a part of speech.
                         entry = self._find(f'd:{tag[0]}')

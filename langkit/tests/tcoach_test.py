@@ -38,7 +38,7 @@ def test_hints():
                     found = result
                     break
             assert ex in found
-    assert_hints("this is a test", 'p:deixis d:this', 'INSERTED', 'd:be', 'deixis', 'p:n d:test')
+    assert_hints("this is a test", 'p:deixis d:this', 'INSERTED', 'd:be', 'p:quant d:a', 'p:n d:test')
 
 def test_bfr():
     assert bfr('are', 'VBP') == ('be', 'v')
