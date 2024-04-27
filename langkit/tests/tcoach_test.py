@@ -15,17 +15,16 @@ glossary = FakeGlossary([
     "p:n d:test",
 ])
 
-class FakeAdviser:
-    def advise(self, tags):
-        returned = []
-        for tag in tags:
-            if tag[1] == 'VBZ':
-                returned.append(('INSERTED', '~'))
-            returned.append(tag)
-        return returned
+def mock_advise(tags):
+    returned = []
+    for tag in tags:
+        if tag[1] == 'VBZ':
+            returned.append(('INSERTED', '~'))
+        returned.append(tag)
+    return returned
 
 def test_hints():
-    tc = TranslationCoach(glossary, FakeAdviser())
+    tc = TranslationCoach(glossary, mock_advise)
     def assert_hints(text, *expected):
         results = [str(h) for h in tc.hints(text)]
         i = 0

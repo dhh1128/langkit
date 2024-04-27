@@ -93,9 +93,9 @@ class TranslationCoach:
     """
     Coaches on translation from English into a given language.
     """
-    def __init__(self, glossary, adviser=None):
+    def __init__(self, glossary, advise_func=None):
         self.glossary = glossary
-        self.adviser = adviser
+        self.advise_func = advise_func
 
     def _find(self, expr):
         hits = self.glossary.find(expr)
@@ -123,8 +123,8 @@ class TranslationCoach:
 
             # See if an adviser will help us translate this sentence. This allows
             # custom logic on a per-language basis.
-            if self.adviser:
-                pos_tags = self.adviser.advise(pos_tags)
+            if self.advise_func:
+                pos_tags = self.advise_func(pos_tags)
 
             # Now do the general translation work: look up each word in the glossary.
             for tag in pos_tags:

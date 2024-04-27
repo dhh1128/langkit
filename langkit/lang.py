@@ -3,6 +3,14 @@ import json
 
 from .glossary import Glossary
 
+import importlib.util
+
+def _import_module_from_path(module_name, module_path):
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 CFG_NAME = 'cfg.json'
 GLOSSARY_NAME = 'glossary.md'
 
@@ -11,12 +19,28 @@ class Lang:
         self.path = os.path.normpath(os.path.abspath(path))
         self.name = os.path.split(self.path)[1]
         self._syl = None
+        self._advise_func = 0
         if os.path.isfile(self.cfg_path):
             with open(self.cfg_path, 'rt') as f:
                 self.cfg = json.loads(f.read())
         else:
             self.cfg = {}
         self._glossary = None
+
+    @property
+    def advise_module_path(self):
+        return os.path.join(self.path, 'advise.py')
+    
+    @property
+    def advise_func(self):
+        if self._advise_func == 0:
+            amp = self.advise_module_path
+            if os.path.isfile(amp):
+                module = _import_module_from_path('advise', amp)
+                self._advise_func = module.advise
+            else:
+                self._advise_func = None
+        return self._advise_func
 
     @property
     def glossary(self):
