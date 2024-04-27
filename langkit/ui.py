@@ -9,6 +9,10 @@ import sys
 ERROR_COLOR = 'red'
 WARNING_COLOR = 'yellow'
 PROMPT_COLOR = 'cyan'
+LEX_COLOR = 'yellow'
+POS_COLOR = 'red'
+NOTE_COLOR = 'green'
+EQUIV_COLOR = 'blue'
 
 def _calc_terminal_size():
     if os.name == 'nt':

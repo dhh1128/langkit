@@ -3,11 +3,6 @@ import re
 from ..ui import *
 from ..glossary import Entry, Defn
 
-LEX_COLOR = 'yellow'
-POS_COLOR = 'red'
-NOTE_COLOR = 'green'
-EQUIV_COLOR = 'blue'
-
 g = None
 hits = []
 

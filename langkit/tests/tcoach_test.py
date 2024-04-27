@@ -20,7 +20,7 @@ class FakeAdviser:
         returned = []
         for tag in tags:
             if tag[1] == 'VBZ':
-                returned.append(('~', 'INSERTED'))
+                returned.append(('INSERTED', '~'))
             returned.append(tag)
         return returned
 
@@ -38,22 +38,23 @@ def test_hints():
                     found = result
                     break
             assert ex in found
-    assert_hints("this is a test", 'deixis', 'INSERTED', 'd:be', 'DT', 'p:n d:test')
+    assert_hints("this is a test", 'deixis', 'INSERTED', 'd:be', 'deixis', 'p:n d:test')
 
 def test_bfr():
-    assert bfr('are', 'VBP') == 'be'
-    assert bfr('am', 'VBP') == 'be'
-    assert bfr('is', 'VBZ') == 'be'
-    assert bfr('taken', 'VBN') == 'tak'
-    assert bfr('walked', 'VBN') == 'walk'
-    assert bfr('running', 'VBG') == 'run'
-    assert bfr('smiling', 'VBG') == 'smil'
-    assert bfr('baked', 'VBD') == 'bak'
-    assert bfr('heavenly', 'RB') == 'heaven'
-    assert bfr('bigger', 'JJR') == 'big'
-    assert bfr('highest', 'JJS') == 'high'
-    assert bfr('pelagic', 'JJ') == 'pelag'
-    assert bfr('childish', 'JJ') == 'child'
-    assert bfr('childlike', 'JJ') == 'child'
-    assert bfr('windy', 'JJ') == 'wind'
+    assert bfr('are', 'VBP') == ('be', 'v')
+    assert bfr('am', 'VBP') == ('be', 'v')
+    assert bfr('is', 'VBZ') == ('be', 'v')
+    assert bfr('taken', 'VBN') == ('tak', 'v')
+    assert bfr('walked', 'VBN') == ('walk', 'v')
+    assert bfr('running', 'VBG') == ('run', 'v')
+    assert bfr('smiling', 'VBG') == ('smil', 'v')
+    assert bfr('baked', 'VBD') == ('bak', 'v')
+    assert bfr('abruptly', 'RB') == ('abrupt', 'ad')
+    assert bfr('bigger', 'JJR') == ('big', 'ad')
+    assert bfr('highest', 'JJS') == ('high', 'ad')
+    assert bfr('pelagic', 'JJ') == ('pelag', 'n')
+    assert bfr('childish', 'JJ') == ('child', 'n')
+    assert bfr('childlike', 'JJ') == ('child', 'n')
+    assert bfr('windy', 'JJ') == ('wind', 'n')
+    assert bfr('heavenly', 'JJ') == ('heaven', 'n')
     

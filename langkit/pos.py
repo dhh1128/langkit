@@ -44,7 +44,7 @@ INVENTORY = [
 
 PLACEHOLDER = pos('~', 'placeholder', '')
 
-def find_nltk(nltk):
+def find_by_nltk(nltk):
     i = bisect.bisect_left(INVENTORY, nltk, key=lambda p: p.nltk)
     if i != len(INVENTORY) and INVENTORY[i].nltk == nltk:
         return INVENTORY[i]

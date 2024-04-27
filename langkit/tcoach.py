@@ -2,11 +2,13 @@ from collections import namedtuple
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
 
-from .pos import find_nltk
+from .pos import find_by_nltk, PLACEHOLDER
 
-# Download NLTK resources (you only need to do this once)
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+# Download NLTK resources if needed.
+if not nltk.data.find('tokenizers/punkt'):
+    nltk.download('punkt', quiet=True)
+if not nltk.data.find('taggers/averaged_perceptron_tagger'):
+    nltk.download('averaged_perceptron_tagger', quiet=True)
 
 SimpleNormalizationRule = namedtuple('SimpleNormalizationRule', ['pattern', 'replacement'])
 SimpleNormalizationRule.apply = lambda self, text: text.replace(self.pattern, self.replacement)
@@ -55,6 +57,7 @@ def bfr(word, pos):
     elif pos == 'JJS':
         if word.endswith('est'): return (word[:-3], 'ad')
     elif pos == 'JJ':
+        if word.endswith('ly'): return (word[:-2], 'n')
         if word.endswith('ic'): return (word[:-2], 'n')
         if word.endswith('ish'): return (word[:-3], 'n')
         if word.endswith('like'): return (word[:-4], 'n')	
@@ -120,18 +123,25 @@ class TranslationCoach:
                 # See if we can convert from nltk parts of speech to our own.
                 # If so, then we can use part of speech to look up the word in the
                 # glossary with high precision.
-                lk_pos = find_nltk(tag[1])
-                if lk_pos and lk_pos.lk:
-                    entry = self._find(f'p:{lk_pos.lk} d:{tag[0]}')
-                if not entry:
-                    # Try looking up the exact word, without a part of speech.
-                    entry = self._find(f'd:{tag[0]}')
+                pos = tag[1]
+                if tag[1] == PLACEHOLDER.nltk:
+                   lex = tag[0]
+                else:
+                    lk_pos = find_by_nltk(pos)
+                    if lk_pos and lk_pos.lk:
+                        entry = self._find(f'p:{lk_pos.lk} d:{tag[0]}')
+                        pos = lk_pos.lk
                     if not entry:
-                        # Try doing base form reduction on the word
-                        word, pos = bfr(tag[0], tag[1])
-                        if word:
-                            entry = self._find(f'p:{pos} d:{word}')
-                lex = None
-                if entry:
-                    lex = entry if isinstance(entry, str) else entry.lexeme
-                yield Hint(tag[0], tag[1], lex)
+                        # Try looking up the exact word, without a part of speech.
+                        entry = self._find(f'd:{tag[0]}')
+                        if not entry:
+                            # Try doing base form reduction on the word
+                            word, new_pos = bfr(tag[0], tag[1])
+                            if word:
+                                entry = self._find(f'p:{new_pos} d:{word}')
+                                if entry:
+                                    pos = new_pos
+                    lex = None
+                    if entry:
+                        lex = entry if isinstance(entry, str) else entry.lexeme
+                yield Hint(tag[0], pos, lex)
