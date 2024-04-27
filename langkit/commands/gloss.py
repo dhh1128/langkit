@@ -1,3 +1,5 @@
+import re
+
 from ..ui import *
 from ..glossary import Entry, Defn
 
@@ -5,6 +7,13 @@ LEX_COLOR = 'yellow'
 POS_COLOR = 'red'
 NOTE_COLOR = 'green'
 EQUIV_COLOR = 'blue'
+
+g = None
+hits = []
+
+def find(expr):
+    global g, hits
+    hits = g.find(expr)
 
 def show_entry(e, idx=None):
     if idx:
@@ -22,36 +31,23 @@ def show_entry(e, idx=None):
         cwrite(wrap_line_with_indent('   # ' + e.notes), NOTE_COLOR)
     print('')
 
-def show_hits(hits, g, with_actions=True):
+def show_hits():
+    global hits
     if hits:
         i = 1
         for hit in hits:
             show_entry(hit, i)
             i += 1
-        if with_actions:
-            offer_entry_actions(hits, g)
     else:
         print("Nothing found.")
 
-def offer_entry_actions(hits, g):
-    write('\n')
-    args = prompt_options('edit #, del #').split()
-    try:
-        if args:
-            cmd = args[0]
-            index = int(args[1]) - 1
-            if input_matches(cmd, "edit"):
-                edit(hits[index], g)
-            elif input_matches(cmd, "del"):
-                delete(hits[index], g)
-    except:
-        warn("Bad command.")
-        
-def delete(entry, g):
+def delete(entry):
+    global g
     g.entries.remove(entry)
     print(f"Deleted {entry.lexeme}.")
 
-def edit(entry, g):
+def edit(entry):
+    global g
     try:
         changed = False
         write('\n')
@@ -69,9 +65,13 @@ def edit(entry, g):
             g.insert(entry)
         new = prompt_options(f"   pos: {entry.pos}")
         if new: changed = entry.pos = new
-        new = prompt_options(f"   defn: {entry.defn}")
-        if new: changed = entry.defn = Defn(new)
-        new = prompt_options(f"   notes: {entry.notes} OR . for none")
+        new = prompt_options(f"   defn: {entry.defn} (/ to append)")
+        if new:
+            if new.startswith('/'):
+                new = str(entry.defn) + ' ' + new 
+            changed = entry.defn = Defn(new)
+        notes = entry.notes if entry.notes else '.'
+        new = prompt_options(f"   notes: {notes} (. = none)")
         if new:
             if new == '.': 
                 new = ''
@@ -87,7 +87,8 @@ def edit(entry, g):
     except KeyboardInterrupt:
         print("\n\nAbandoned edit.")
 
-def add(g):
+def add():
+    global g
     added = False
     lex = prompt_options("   lex").strip()
     if lex:
@@ -115,35 +116,50 @@ def add(g):
         write("Added ")
         cwrite(lex, LEX_COLOR)
         write('.\n\n')
-        show_stats(g)
+        show_stats()
     else:
         print("Nothing added.")
 
 def remind_syntax():
-    print('lex <expr>, def <expr>, add, edit, quit')
+    print('find <expr>, add, edit #, del #, quit')
 
-def show_stats(g):
+def show_stats():
+    global g
     keys = sorted(g.stats.keys(), reverse=True)
     keys.remove('entries')
     keys.insert(0, 'entries')
     stats = ', '.join([f"{key}: {g.stats[key]}" for key in keys])
     print(wrap_line_with_indent(stats))
 
+SHORT_ENTRY_CMD_PAT = re.compile(r'^([ed])(\d+)$')
+
 def cmd(lang, *args):
     """
     - work with glossary
     """
+    global g
     g = lang.glossary
-    show_stats(g)
+    show_stats()
     remind_syntax()
     while True:
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
+            m = SHORT_ENTRY_CMD_PAT.match(cmd)
+            if m:
+                cmd = m.group(1)
+                args.insert(1, m.group(2)) 
             if input_matches(cmd, "find"):
-                show_hits(g.find(' '.join(args[1:])), g)
+                find(' '.join(args[1:]))
+                show_hits()
             elif input_matches(cmd, "add"):
-                add(g)
+                add()
+            elif input_matches(cmd, "edit"):
+                if len(args) == 1 and len(hits) == 1: args.append('1')
+                edit(hits[int(args[1])-1])
+            elif input_matches(cmd, "delete"):
+                if len(args) == 1 and len(hits) == 1: args.append('1')
+                delete(hits[int(args[1])-1])
             elif input_matches(cmd, "quit"):
                 break
             else:

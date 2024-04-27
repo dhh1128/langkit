@@ -174,8 +174,6 @@ class SearchExpr:
                 expr = matcher.expr
                 if matcher.first_wildcard_index != 0:
                     expr = '*' + expr
-                if expr[-1] not in '*?':
-                    expr = expr + '*'
                 expr = expr.replace(' ', '*')
                 if expr != matcher.expr:
                     changed = True
