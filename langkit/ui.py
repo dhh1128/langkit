@@ -130,5 +130,5 @@ def warn_confirm(question):
     return input_matches(response, "yes")
 
 def input_matches(response, constant):
-    return constant.startswith(response.lower())
+    return response and constant.startswith(response.lower())
 

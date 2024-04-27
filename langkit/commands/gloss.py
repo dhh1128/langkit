@@ -11,13 +11,13 @@ EQUIV_COLOR = 'blue'
 g = None
 hits = []
 
-def find(expr):
+def find(expr, try_fuzzy=True):
     global g, hits
-    hits = g.find(expr)
+    hits = g.find(expr, try_fuzzy=try_fuzzy)
 
-def show_entry(e, idx=None):
-    if idx:
-        cwrite(f"\n{idx}", PROMPT_COLOR)
+def show_entry(e, num=None):
+    if num:
+        cwrite(f"\n{num}", PROMPT_COLOR)
         write(". ")
     cwrite(e.lexeme, LEX_COLOR)
     write(" (")
@@ -31,15 +31,16 @@ def show_entry(e, idx=None):
         cwrite(wrap_line_with_indent('   # ' + e.notes), NOTE_COLOR)
     print('')
 
-def show_hits():
-    global hits
-    if hits:
+def show_hits(which=None, with_number=True):
+    if not which:
+        global hits
+        which = hits
+    if which:
         i = 1
-        for hit in hits:
-            show_entry(hit, i)
+        for hit in which:
+            show_entry(hit, i if with_number else None)
             i += 1
-    else:
-        print("Nothing found.")
+        return True
 
 def delete(entry):
     global g
@@ -94,7 +95,7 @@ def add():
     if lex:
         hits = g.find(f'l:{lex}', try_fuzzy=False)
         if hits:
-            show_hits(hits, g, with_actions=False)
+            show_hits(hits, with_number=False)
             if warn_confirm("Similar words exist. Continue?"):
                 hits = None
         if not hits:
@@ -104,7 +105,7 @@ def add():
                 if defn:
                     hits = g.find(f'd:{defn}')
                     if hits:
-                        show_hits(hits, g, with_actions=False)
+                        show_hits(hits, with_number=False)
                         if warn_confirm("There may already be a synonym. Continue?"):
                             hits = None
                     if not hits:
@@ -151,7 +152,8 @@ def cmd(lang, *args):
                 args.insert(1, m.group(2)) 
             if input_matches(cmd, "find"):
                 find(' '.join(args[1:]))
-                show_hits()
+                if not show_hits():
+                    print("Nothing found.")
             elif input_matches(cmd, "add"):
                 add()
             elif input_matches(cmd, "edit"):
