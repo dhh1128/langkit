@@ -61,7 +61,6 @@ def test_searchexpr_fuzzify():
     assert_fuzzy("defn:?abc?", "d:?abc?")
     assert_fuzzy("defn:abc xyz", "d:*!abc*xyz*")
 
-
 def assert_di(x, kind, txt=None):
     di = DefnItem(x)
     assert di.kind == kind

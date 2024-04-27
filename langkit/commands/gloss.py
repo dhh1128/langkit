@@ -93,7 +93,7 @@ def add():
     added = False
     lex = prompt_options("   lex").strip()
     if lex:
-        hits = g.find(f'l:{lex}', try_fuzzy=False)
+        hits = g.find(f'l:{lex}!', try_fuzzy=False)
         if hits:
             show_hits(hits, with_number=False)
             if warn_confirm("Similar words exist. Continue?"):
@@ -103,7 +103,7 @@ def add():
             if pos:
                 defn = prompt_options("   defn")
                 if defn:
-                    hits = g.find(f'd:{defn}', try_fuzzy=False)
+                    hits = g.find(f'd:*!{defn}', try_fuzzy=False)
                     if hits:
                         show_hits(hits, with_number=False)
                         if warn_confirm("There may already be a synonym. Continue?"):
@@ -146,7 +146,7 @@ def cmd(lang, *args):
         args = prompt('\n>').strip().split()
         if args:
             cmd = args[0].lower()
-            
+
             # Tolerate a very short form, like e1 for edit 1
             m = SHORT_ENTRY_CMD_PAT.match(cmd)
             if m:
