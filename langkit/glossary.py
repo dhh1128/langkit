@@ -188,16 +188,24 @@ class SearchExpr:
         
     def matches(self, entry: Entry) -> bool:
         for field_selector, match_expr in self.criteria:
-            if field_selector == 'l': text = entry.lexeme
+            # First look in the simple fields.
+            match_count = 2 if field_selector == 'x' else 1
+            text = None
+            if field_selector in 'lx': text = entry.lexeme
             elif field_selector == 'p': text = entry.pos
-            elif field_selector == 'd': text = str(entry.defn)
-            elif field_selector == 'x':
-                if not match_expr.matches(entry.lexeme) and not match_expr.matches(str(entry.defn)):
-                    return False
-                continue
-            else: text = entry.notes
-            if not match_expr.matches(text):
-                return False
+            elif field_selector == 'n': text = entry.notes
+            if text and not match_expr.matches(text):
+                match_count -= 1
+            # Now look in the definition, which has subfields.
+            if match_count and (field_selector in 'dx'):
+                found = False
+                for defn_item in entry.defn.equivs:
+                    if match_expr.matches(defn_item.value):
+                        found = True
+                        break
+                if not found:
+                    match_count -= 1
+            if match_count < 1: return False
         return True
 
 class Glossary:
@@ -312,7 +320,7 @@ class Glossary:
                     f.close()
             return True
 
-    def find(self, expr, max_hits=5, exclude=None, try_fuzzy=True):
+    def find(self, expr, max_hits=5, exclude=None, try_fuzzy=False):
         hits = []
         s_expr = expr if isinstance(expr, SearchExpr) else SearchExpr(expr)
         initial_search = s_expr.starter

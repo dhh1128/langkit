@@ -6,6 +6,8 @@ if os.name == 'nt':
     import struct
 import sys
 
+verbose = False
+
 ERROR_COLOR = 'red'
 WARNING_COLOR = 'yellow'
 PROMPT_COLOR = 'cyan'
@@ -13,6 +15,14 @@ LEX_COLOR = 'yellow'
 POS_COLOR = 'red'
 NOTE_COLOR = 'green'
 EQUIV_COLOR = 'blue'
+
+def get_verbose():
+    global verbose
+    return verbose
+
+def set_verbose(value):
+    global verbose
+    verbose = value
 
 def _calc_terminal_size():
     if os.name == 'nt':

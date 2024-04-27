@@ -185,7 +185,7 @@ def test_syllables_complex():
     syl = assert_syl('aeiou', 'smphntk', ['CCCV'], 40)
     i = 0
     for s in syl:
-        print(f"{i} {s}")
+        #print(f"{i} {s}")
         i += 1
     long_syl = [s for s in syl if len(s) == 4]
     assert long_syl == []

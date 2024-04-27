@@ -49,7 +49,7 @@ def edit(entry):
         write('\n')
         new = prompt_options(f"   lex: {entry.lexeme}")
         if new: 
-            hits = g.find(f'l:{new}', try_fuzzy=False)
+            hits = g.find(f'l:{new}')
             if hits:
                 warn("Edit would overwrite {lex} entry that already exists.")
                 return
@@ -88,7 +88,7 @@ def add():
     added = False
     lex = prompt_options("   lex").strip()
     if lex:
-        hits = g.find(f'l:{lex}!', try_fuzzy=False)
+        hits = g.find(f'l:{lex}!', try_fuzzy)
         if hits:
             show_hits(hits, with_number=False)
             if warn_confirm("Similar words exist. Continue?"):
@@ -98,7 +98,7 @@ def add():
             if pos:
                 defn = prompt_options("   defn")
                 if defn:
-                    hits = g.find(f'd:*!{defn}', try_fuzzy=False)
+                    hits = g.find(f'd:*!{defn}')
                     if hits:
                         show_hits(hits, with_number=False)
                         if warn_confirm("There may already be a synonym. Continue?"):

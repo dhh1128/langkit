@@ -78,13 +78,16 @@ class Hint:
     """
     Represents a hint about how to translate an English word.
     """
-    def __init__(self, word, pos, lex=None):
+    def __init__(self, word, pos, lex=None, approx=False):
         assert bool(pos) or bool(lex)
         self.word = word
         self.pos = pos
         self.lex = lex
+        self.approx = approx
     def __str__(self):
         return self.lex if self.lex else f"{self.word} ({self.pos}): ?"
+    def __repr__(self):
+        return f"{self.word} pos={self.pos} lex={self.lex} approx={self.approx}"
     
 class TranslationCoach:
     """
@@ -98,6 +101,12 @@ class TranslationCoach:
         hits = self.glossary.find(expr)
         if hits:
             return hits[0]
+        # Automatically try putting verbs in infinitive form.
+        elif 'p:v' in expr and 'd:to ' not in expr:
+            expr = expr.replace('d:', 'd:to ')
+            hits = self.glossary.find(expr)
+            if hits:
+                return hits[0]
 
     def hints(self, paragraph):
         for nr in NRules:
@@ -127,9 +136,11 @@ class TranslationCoach:
                 if tag[1] == PLACEHOLDER.nltk:
                    lex = tag[0]
                 else:
+                    approx = False
                     lk_pos = find_by_nltk(pos)
                     if lk_pos and lk_pos.lk:
-                        entry = self._find(f'p:{lk_pos.lk} d:{tag[0]}')
+                        expr = f'p:{lk_pos.lk} d:{tag[0]}'
+                        entry = self._find(expr)
                         pos = lk_pos.lk
                     if not entry:
                         # Try looking up the exact word, without a part of speech.
@@ -138,10 +149,12 @@ class TranslationCoach:
                             # Try doing base form reduction on the word
                             word, new_pos = bfr(tag[0], tag[1])
                             if word:
-                                entry = self._find(f'p:{new_pos} d:{word}')
+                                expr = f'p:{new_pos} d:{word}'
+                                entry = self._find(expr)
                                 if entry:
                                     pos = new_pos
+                                    approx = True
                     lex = None
                     if entry:
                         lex = entry if isinstance(entry, str) else entry.lexeme
-                yield Hint(tag[0], pos, lex)
+                yield Hint(tag[0], pos, lex, approx)

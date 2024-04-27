@@ -162,4 +162,4 @@ def test_find_defn_wildcards():
 
 def test_find_anywhere():
     assert len(g.find('swallow')) == 1
-    assert len(g.find('vinegar')) == 1
+    assert len(g.find('vinegar', try_fuzzy=True)) == 1
