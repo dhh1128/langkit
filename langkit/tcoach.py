@@ -34,20 +34,20 @@ def bfr(word, pos):
     This algorithm is very crude. It only aims to increase the success
     of glossary lookup a modest amount.
     """
-    if pos == 'VBD':
+    if pos == 'VBD': # verb past tense: walked
         if word.endswith('ed'): return (word[:-2], 'v')
-    elif pos == 'VBG':
+        if word in ["was", "were"]: return ('be', 'v')
+    elif pos == 'VBG': # verb gerund/present participle: walking
         if word.endswith('ing'):
             word = word[:-3]
             return (word[:-1], 'v') if word[-1] == word[-2] else (word, 'v')
-    elif pos == 'VBN':
+    elif pos == 'VBN': # verb past participle: walked
         if word.endswith('en') or word.endswith('ed'): return (word[:-2], 'v')
-    elif pos == 'VBP':
+    elif pos == 'VBP': # verb non-3rd person singular present: walk
         if word in ['are', 'am']: return ('be', 'v')
-    elif pos == 'VBZ':
+    elif pos == 'VBZ': # verb 3rd person singular present: walks
         if word.endswith('s'):
             return ('be', 'v') if word == 'is' else (word[:-1], 'v')
-        if word == 'are': return ('be', 'v')
     elif pos == 'RB':
         if word.endswith('ly'): return (word[:-2], 'ad')
     elif pos == 'JJR':
@@ -129,6 +129,7 @@ class TranslationCoach:
             # Now do the general translation work: look up each word in the glossary.
             for tag in pos_tags:
                 entry = None
+                approx = False
                 # See if we can convert from nltk parts of speech to our own.
                 # If so, then we can use part of speech to look up the word in the
                 # glossary with high precision.
@@ -136,7 +137,6 @@ class TranslationCoach:
                 if tag[1] == PLACEHOLDER.nltk:
                    lex = tag[0]
                 else:
-                    approx = False
                     lk_pos = find_by_nltk(pos)
                     if lk_pos and lk_pos.lk:
                         # We might have more than one POS for a given nltk category;

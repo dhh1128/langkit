@@ -30,7 +30,7 @@ def cmd(lang, *args):
     [-v] [FNAME | SENTENCE] - help with translation
     """
     global coach
-    coach = TranslationCoach(lang.glossary)
+    coach = TranslationCoach(lang.glossary, lang.advise_func)
     if args and args[0] == '-v':
         set_verbose(True)
         args = args[1:]
