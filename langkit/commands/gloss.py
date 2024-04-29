@@ -3,6 +3,7 @@ import re
 from ..ui import *
 from ..glossary import Entry, Defn
 
+
 g = None
 hits = []
 
@@ -127,6 +128,11 @@ def show_stats():
     stats = ', '.join([f"{key}: {g.stats[key]}" for key in keys])
     print(wrap_line_with_indent(stats))
 
+
+def thesaurus(word):
+    print("lookup synonyms for word")
+
+
 SHORT_ENTRY_CMD_PAT = re.compile(r'^([ed])(\d+)$')
 
 def cmd(lang, *args):
@@ -157,6 +163,8 @@ def cmd(lang, *args):
             elif input_matches(cmd, "edit"):
                 if len(args) == 1 and len(hits) == 1: args.append('1')
                 edit(hits[int(args[1])-1])
+            elif input_matches(cmd, "thesaurus"):
+                thesaurus(args[1])
             elif input_matches(cmd, "delete"):
                 if len(args) == 1 and len(hits) == 1: args.append('1')
                 delete(hits[int(args[1])-1])

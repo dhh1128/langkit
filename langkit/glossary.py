@@ -351,4 +351,3 @@ class Glossary:
         self.entries.insert(index, entry)
         self._unsaved = True
         self._stats = None
-
