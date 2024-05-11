@@ -116,7 +116,8 @@ class MatchExpr:
                 wc1 = min(wc1, wildcards[i])
         self.first_wildcard = -1 if wc1 == NO_WILDCARD else wc1
         self._regex = None if self.first_wildcard == -1 else re.compile(
-            expr.replace('?', '.').replace('*', '.*?').replace('!', r'\b'))
+            expr.replace('?', '.').replace('*', '.*?').replace('!', r'\b')\
+            .replace('(', '\(').replace(')', '\)'))
 
     @property
     def wildcarded(self):
@@ -132,7 +133,7 @@ class MatchExpr:
     def matches(self, txt) -> bool:
         return self._regex.match(txt) if self._regex else (self.expr == txt)
 
-SCOPED_SEARCH_EXPR = re.compile(r'(?:^|\s)(l(?:e(?:x)?)?|p(?:o(?:s)?)?|d(?:e(?:f(?:n)?)?)?|n(?:o(?:t(?:e(?:s)?)?)?)?):')
+SCOPED_SEARCH_EXPR = re.compile(r'(?:^|\s)(l(?:e(?:m(?:m(?:a)?)?)?)?|p(?:o(?:s)?)?|d(?:e(?:f(?:n)?)?)?|n(?:o(?:t(?:e(?:s)?)?)?)?):')
 class SearchExpr:
     def __init__(self, expr):
         criteria = []

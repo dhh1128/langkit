@@ -276,6 +276,7 @@ def get_entry_from_args(ctx, args):
     cprint(f"{which}: no such entry.", ERROR_COLOR)
 
 def give_hints(coach, text):
+    print()
     verbose = get_verbose()
     column = 1
     width = get_terminal_size()[0]
@@ -296,27 +297,33 @@ def give_hints(coach, text):
         else:
             write(out)
         column += len(out)
-    print('')
+    print()
 
 def trans(ctx, args):
     if ctx.tcoach is None:
         ctx.tcoach = TranslationCoach(ctx.lang.glossary, ctx.lang.advise_func)
     coach = ctx.tcoach
     if not args:
+        if ctx.last_trans:
+            give_hints(coach, ctx.last_trans)
         while True:
             try:
-                text = prompt("Source text? >")
+                text = prompt("\nSource text? >")
+                if text: 
+                    give_hints(coach, text)
+                    ctx.last_trans = text
+                else:
+                    break
             except KeyboardInterrupt:
-                print()
-                return
-            give_hints(coach, text)
-    elif len(args) == 1 and os.path.isfile(args[0]):
-        with open(args[0], 'r') as f:
-            text = f.read()
-        give_hints(coach, text)
+                break
     else:
-        text = ' '.join(args)
+        if len(args) == 1 and os.path.isfile(args[0]):
+            with open(args[0], 'r') as f:
+                text = f.read()
+        else:
+            text = ' '.join(args)
         give_hints(coach, text)
+        ctx.last_trans = text
 
 SHORT_ENTRY_CMD_PAT = re.compile(r'^([ed])(\d+)$')
 
@@ -335,6 +342,7 @@ def cmd(lang, *args):
     ctx.scan_settings_reported = False
     ctx.last_find = None
     ctx.tcoach = None
+    ctx.last_trans = None
 
     # Show some stuff to orient user.
     show_stats(ctx)

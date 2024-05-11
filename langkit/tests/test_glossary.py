@@ -30,9 +30,9 @@ def test_searchexpr():
     def assert_matches(expr):
         se = SearchExpr(expr)
         assert se.matches(entry)
-    assert_matches("lex:abc")
-    assert_matches("lex:!abc")
-    assert_matches("lex:abc!")
+    assert_matches("le:abc")
+    assert_matches("lem:!abc")
+    assert_matches("lem:abc!")
     assert_matches("l:abc")
     assert_matches("pos:123")
     assert_matches("defn:*xyz")
@@ -43,10 +43,10 @@ def test_searchexpr_starter():
     def assert_starter(expr, starter):
         se = SearchExpr(expr)
         assert se.starter == starter
-    assert_starter("lex:abc pos:v", "abc")
-    assert_starter("pos:v lex:ab*c", "ab")
+    assert_starter("lemma:abc pos:v", "abc")
+    assert_starter("pos:v le:ab*c", "ab")
     assert_starter("def:abc pos:v", "")
-    assert_starter("lex:*abc notes:notes pos:v", "")
+    assert_starter("lem:*abc notes:notes pos:v", "")
     
 def test_searchexpr_fuzzify():
     def assert_fuzzy(expr, fuzzy_equiv):
@@ -55,7 +55,7 @@ def test_searchexpr_fuzzify():
         changed = se.fuzzify()
         assert str(se) == fuzzy_equiv
         assert changed == (original != fuzzy_equiv)
-    assert_fuzzy("lex:abc", "l:*!abc*")
+    assert_fuzzy("lemma:abc", "l:*!abc*")
     assert_fuzzy("pos:abc", "p:abc")
     assert_fuzzy("notes:?abc", "n:?abc*")
     assert_fuzzy("defn:?abc?", "d:?abc?")
