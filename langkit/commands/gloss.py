@@ -1,21 +1,19 @@
+import os
 import re
+import traceback
 
 from ..ui import *
-from ..glossary import Entry, Defn
+from ..glossary import Entry, Defn, Glossary
 
-
-g = None
-hits = []
-
-def find(expr, try_fuzzy=True):
-    global g, hits
-    hits = g.find(expr, try_fuzzy=try_fuzzy)
+def find(ctx, expr, try_fuzzy=True):
+    ctx.last_find_expr = expr
+    ctx.hits = ctx.lang.glossary.find(expr, try_fuzzy=try_fuzzy)
 
 def show_entry(e, num=None):
     if num:
         cwrite(f"\n{num}", PROMPT_COLOR)
         write(". ")
-    cwrite(e.lexeme, LEX_COLOR)
+    cwrite(e.lemma, LEX_COLOR)
     write(" (")
     cwrite(e.pos, POS_COLOR)
     write(")")
@@ -27,10 +25,9 @@ def show_entry(e, num=None):
         cwrite(wrap_line_with_indent('   # ' + e.notes), NOTE_COLOR)
     print('')
 
-def show_hits(which=None, with_number=True):
+def show_hits(ctx, which=None, with_number=True):
     if not which:
-        global hits
-        which = hits
+        which = ctx.hits
     if which:
         i = 1
         for hit in which:
@@ -38,24 +35,24 @@ def show_hits(which=None, with_number=True):
             i += 1
         return True
 
-def delete(entry):
-    global g
-    g.entries.remove(entry)
-    print(f"Deleted {entry.lexeme}.")
+def delete(ctx, entry):
+    ctx.lang.glossary.entries.remove(entry)
+    ctx.lang.glossary._stats = None
+    print(f"Deleted {entry.lemma}.")
 
-def edit(entry):
-    global g
+def edit(ctx, entry):
+    g = ctx.lang.glossary
     try:
         changed = False
         write('\n')
-        new = prompt_options(f"   lex: {entry.lexeme}")
-        if new: 
-            hits = g.find(f'l:{new}')
-            if hits:
+        new = prompt_options(f"   lex: {entry.lemma}")
+        if new and new != entry.lemma: 
+            redundant = g.find(f'l:{new}')
+            if redundant:
                 warn("Edit would overwrite {lex} entry that already exists.")
                 return
-            changed = entry.lexeme = new
-            # Since lexeme has changed, it may sort differently.
+            changed = entry.lemma = new
+            # Since lemma has changed, it may sort differently.
             # Take it out of glossary entry list, then re-add it
             # to maintain proper sort order.
             g.entries.remove(entry)
@@ -76,62 +73,203 @@ def edit(entry):
             else:
                 changed = True
             entry.notes = new
-        if changed:
-            g.save(force=True)
-            print("\nUpdated entry.")
-        else:
-            print("\nNo changes.")
     except KeyboardInterrupt:
-        print("\n\nAbandoned edit.")
-
-def add():
-    global g
-    added = False
-    lex = prompt_options("   lex").strip()
-    if lex:
-        hits = g.find(f'l:{lex}!')
-        if hits:
-            show_hits(hits, with_number=False)
-            if warn_confirm("Similar words exist. Continue?"):
-                hits = None
-        if not hits:
-            pos = prompt_options("   pos")
-            if pos:
-                defn = prompt_options("   defn")
-                if defn:
-                    hits = g.find(f'd:*!{defn}')
-                    if hits:
-                        show_hits(hits, with_number=False)
-                        if warn_confirm("There may already be a synonym. Continue?"):
-                            hits = None
-                    if not hits:
-                        notes = prompt_options("   notes")
-                        g.insert(Entry((lex, pos, defn, notes)))
-                        g.save()
-                        added = True
-    if added:
-        write("Added ")
-        cwrite(lex, LEX_COLOR)
-        write('.\n\n')
-        show_stats()
+        # Undo whatever edit(s) we made.
+        if changed:
+            ctx.lang.glossary = Glossary.load(g.fname)
+            changed = False
+    print()
+    if changed:
+        g.save(force=True)
+        g._stats = None
+        show_hits(ctx, [entry], with_number=False)
     else:
-        print("Nothing added.")
+        print("Abandoned edit.")
 
-def remind_syntax():
-    print('find <expr>, add, edit #, del #, quit')
+def arg_else_prompt(args, n, prompt):
+    if len(args) > n:
+        arg = args[n]
+        print(f"{prompt}> {arg}")
+        return arg
+    return prompt_options(prompt)
 
-def show_stats():
-    global g
-    keys = sorted(g.stats.keys(), reverse=True)
-    keys.remove('entries')
-    keys.insert(0, 'entries')
-    stats = ', '.join([f"{key}: {g.stats[key]}" for key in keys])
-    print(wrap_line_with_indent(stats))
+def add(ctx, args):
+    g = ctx.lang.glossary
+    entry = None
+    try:
+        lex = arg_else_prompt(args, 0, "   lex")
+        if lex:
+            redundant = g.find(f'l:{lex}!')
+            if redundant:
+                show_hits(ctx, redundant, with_number=False)
+                if warn_confirm("Similar words exist. Continue?"):
+                    redundant = None
+            if not redundant:
+                pos = arg_else_prompt(args, 1, "   pos")
+                if pos:
+                    defn = arg_else_prompt(args, 2, "   defn")
+                    if defn:
+                        # If the item has a part of speech that doesn't typically
+                        # get inflected, then when we look up synonyms, look
+                        # only for ones with the same part of speech.
+                        pos_criterion = '' if pos[0] in 'nva' else f"p:{pos} "
+                        redundant = g.find(f'{pos_criterion}d:*!{defn}')
+                        if redundant:
+                            show_hits(ctx, redundant, with_number=False)
+                            if warn_confirm("There may already be a synonym. Continue?"):
+                                redundant = None
+                        if not redundant:
+                            notes = arg_else_prompt(args, 3, "   notes")
+                            entry = Entry((lex, pos, defn, notes))
+    except KeyboardInterrupt:
+        pass
+    print()
+    if entry:
+        g.insert(entry)
+        g.save()
+        show_hits(ctx, [entry], with_number=False)
+    else:
+        print("Abandoned add.")
 
+def show_help():
+    doc = """
+find <expr> - lookup data in glossary
+
+  expr can be a simple string to query lemma+def, or can reference specific fields (lemma: pos: defn: notes: or short forms thereof) 
+
+add [lemma [pos [defn [notes]]]] - add a glossary entry
+
+edit [number or lemma] - edit a glossary entry
+
+del [number or lemma] - delete a glossary entry
+
+scan [sd:scan directory] [sfp:scan filename pattern] regex - scan files for text
+
+stats
+
+quit
+"""
+    lines = doc.strip().splitlines()
+    for line in lines:
+        if not line.startswith(' '):
+            if ' ' in line:
+                cmd, rest = line.split(' ', 1)
+                rest = ' ' + rest
+                cwrite(cmd, CMD_COLOR)
+                cprint(wrap_line_with_indent(rest, indent="    ", first_width=-1 * (len(cmd) + 1)))
+            else:
+                cprint(line, CMD_COLOR)
+        else:
+            print(wrap_line_with_indent(line))
+
+def show_stats(ctx):
+    s = ctx.lang.glossary.stats
+    def write_section(name, color):
+        label = f"unique {name}"
+        write(f"{label}: ")
+        n = s[label]
+        cprint(f"{n}", color)
+        detail = s.get(name)
+        if detail:
+            keys = sorted(detail.keys())
+            for item in keys:
+                cwrite(f"  {item}", color)
+                print(f": x{detail[item]}")
+    print()
+    write_section("entries", LEX_COLOR)
+    write_section("pos", POS_COLOR)
+    write_section("meanings", EQUIV_COLOR)
 
 def thesaurus(word):
     print("lookup synonyms for word")
 
+def scan(ctx, args):
+    # See if args contain sd:<folder> or sfp:<regex>, to change scan behavior.
+    while args:
+        i = args[0].find(':')
+        if i <= 0: break
+        prefix = args[0][:i]
+        rest = args[0][i+1:]
+        if prefix.lower() == 'sd':
+            if os.path.isdir(rest):
+                ctx.scan_dir = os.path.abspath(rest)
+                ctx.scan_settings_reported = False
+                del args[0]
+            else:
+                cprint(f"{rest} is not a valid directory to scan.", ERROR_COLOR)
+                return
+        elif prefix.lower() == 'sfp':
+            try: 
+                ctx.scan_fname_pat = re.compile(rest, re.I)
+                ctx.scan_settings_reported = False
+                del args[0]
+            except:
+                cprint(f'"{rest}" is not a valid regex.', ERROR_COLOR)
+                return
+    
+    if not ctx.scan_settings_reported:
+        print()
+        print(wrap_line_with_indent(f'Scanning files with names like "{ctx.scan_fname_pat.pattern}" within {ctx.scan_dir}.'))
+        ctx.scan_settings_reported = True
+
+    if args:
+        try:
+            rest = ' '.join(args)
+            regex = re.compile(rest, re.DOTALL)
+        except:
+            cprint(f'"{rest}" is not a valid regex.', ERROR_COLOR)
+            return
+        match_count = 0
+        file_count = 0
+        for folder, dirnames, file_names in os.walk(ctx.scan_dir):
+            # Skip hidden folders.
+            dirnames[:] = [d for d in dirnames if d[0] not in '._']
+            for fname in file_names:
+                if ctx.scan_fname_pat.match(fname):
+                    file_count += 1
+                    file_path = os.path.join(folder, fname)
+                    printed_file_path = False
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            # Read each line in the file
+                            for line_number, line in enumerate(f, start=1):
+                                # Search for the pattern in the line
+                                line = line.strip()
+                                if regex.search(line):
+                                    match_count += 1
+                                    if not printed_file_path:
+                                        print()
+                                        cprint(os.path.relpath(file_path, ctx.scan_dir), OPTION_COLOR)
+                                        printed_file_path = True
+                                    print(f"  line {line_number}:")
+                                    text = wrap_line_with_indent("    " + line)
+                                    # Re-find the match
+                                    m = regex.search(text)
+                                    # Print the match with highlight
+                                    write(text[:m.start()])
+                                    cwrite(text[m.start():m.end()], LEX_COLOR)
+                                    print(text[m.end():])
+                    except Exception as e:
+                        traceback.print_exc()
+                        cprint(f"Error scanning '{file_path}': {e}", ERROR_COLOR)
+        print(f"\nFound {match_count} matches in {file_count} files.")
+
+def get_entry_from_args(ctx, args):
+    # Was an entry specified?
+    which = args[1] if len(args) > 1 else "1"
+    # Was it identified by number?
+    n = None
+    try: n = int(which)
+    except: pass
+    try:
+        if n and len(ctx.hits) >= n:
+            return ctx.hits[n - 1]
+        else:
+            for item in ctx.hits:
+                if item.lemma == which:
+                    return item
+    except: pass
+    cprint(f"{which}: no such entry.", ERROR_COLOR)
 
 SHORT_ENTRY_CMD_PAT = re.compile(r'^([ed])(\d+)$')
 
@@ -139,10 +277,20 @@ def cmd(lang, *args):
     """
     - work with glossary
     """
-    global g
-    g = lang.glossary
-    show_stats()
-    remind_syntax()
+
+    # Define a REPL context that we can pass to our helper functions.
+    class ReplContext: pass
+    ctx = ReplContext
+    ctx.lang = lang
+    ctx.hits = []
+    ctx.scan_dir = os.path.abspath('.')
+    ctx.scan_fname_pat = re.compile(r'.*\.(md|html?|txt)$', re.I)
+    ctx.scan_settings_reported = False
+    ctx.last_find = None
+
+    show_stats(ctx)
+    print()
+    show_help()
     while True:
         args = prompt('\n>').strip().split()
         if args:
@@ -153,22 +301,27 @@ def cmd(lang, *args):
             if m:
                 cmd = m.group(1)
                 args.insert(1, m.group(2))
+            cmd_is = lambda token: input_matches(cmd, token)
 
-            if input_matches(cmd, "find"):
-                find(' '.join(args[1:]))
-                if not show_hits():
-                    print("Nothing found.")
-            elif input_matches(cmd, "add"):
-                add()
-            elif input_matches(cmd, "edit"):
-                if len(args) == 1 and len(hits) == 1: args.append('1')
-                edit(hits[int(args[1])-1])
-            elif input_matches(cmd, "thesaurus"):
+            if cmd_is("find"):
+                expr = ' '.join(args[1:]) if len(args) > 1 else ctx.last_find_expr
+                find(ctx, expr)
+                if not show_hits(ctx): print("Nothing found.")
+            elif cmd_is("scan"):
+                scan(ctx, args[1:])
+            elif cmd_is("add"):
+                add(ctx, args[1:])
+            elif cmd_is("edit"):
+                entry = get_entry_from_args(ctx, args)
+                if entry: edit(ctx, entry)
+            elif cmd_is("delete"):
+                entry = get_entry_from_args(ctx, args)
+                if entry: delete(ctx, entry)
+            elif cmd_is("stats"):
+                show_stats(ctx)
+            elif cmd_is("thesaurus"):
                 thesaurus(args[1])
-            elif input_matches(cmd, "delete"):
-                if len(args) == 1 and len(hits) == 1: args.append('1')
-                delete(hits[int(args[1])-1])
-            elif input_matches(cmd, "quit"):
+            elif cmd_is("quit"):
                 break
             else:
-                remind_syntax()
+                show_help()

@@ -161,5 +161,5 @@ class TranslationCoach:
                                     approx = True
                     lex = None
                     if entry:
-                        lex = entry if isinstance(entry, str) else entry.lexeme
+                        lex = entry if isinstance(entry, str) else entry.lemma
                 yield Hint(tag[0], pos, lex, approx)

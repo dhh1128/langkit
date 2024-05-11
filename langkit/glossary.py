@@ -9,7 +9,7 @@ EXPLAINED_EQUIV = ':'
 EXACT_EQUIV = ''
 EQUIV_CHARS = NARROWER_EQUIV + BROADER_EQUIV + ROUGH_EQUIV + EXPLAINED_EQUIV
 EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])?(.+?)(/|$)')
-COLUMNS = ['lexeme', 'pos', 'definition', 'notes']
+COLUMNS = ['lemma', 'pos', 'definition', 'notes']
 COLUMN_COUNT = len(COLUMNS)
 COLUMN_SEP = ' | '
 HEADER = COLUMN_SEP.join(COLUMNS)
@@ -82,7 +82,7 @@ class Entry:
     def __init__(self, fields):
         if isinstance(fields, str):
             fields = [f.strip() for f in fields.split('|')]
-        self.lexeme = fields[0]
+        self.lemma = fields[0]
         self.pos = fields[1]
         self.defn = Defn(fields[2])
         if len(fields) > 3 and fields[3]:
@@ -91,18 +91,18 @@ class Entry:
             self.notes = ''
 
     def __lt__(self, other):
-        return self.lexeme < other.lexeme
+        return self.lemma < other.lemma
 
     def __str__(self):
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
-        return self.lexeme + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
+        return self.lemma + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
     
 def _is_header(entry: Entry) -> bool:
-    return entry.lexeme == COLUMNS[0]
+    return entry.lemma == COLUMNS[0]
 
 _DIVIDER_LEX_PAT = re.compile('-{2,}$')
 def _is_divider(entry: Entry) -> bool:
-    return _DIVIDER_LEX_PAT.match(entry.lexeme)
+    return _DIVIDER_LEX_PAT.match(entry.lemma)
 
 
 class MatchExpr:
@@ -138,7 +138,7 @@ class SearchExpr:
         criteria = []
         chunks = SCOPED_SEARCH_EXPR.split(expr)
         # Accept text without a field prefix. The meaning of this is that
-        # the user wants to search in both the lexeme and the definition,
+        # the user wants to search in both the lemma and the definition,
         # unless one of those other fields is specified explicitly.
         if ':' not in chunks[0]:
             first_chars = [x[0] for x in chunks if ':' in x]
@@ -191,7 +191,7 @@ class SearchExpr:
             # First look in the simple fields.
             match_count = 2 if field_selector == 'x' else 1
             text = None
-            if field_selector in 'lx': text = entry.lexeme
+            if field_selector in 'lx': text = entry.lemma
             elif field_selector == 'p': text = entry.pos
             elif field_selector == 'n': text = entry.notes
             if text and not match_expr.matches(text):
@@ -225,22 +225,25 @@ class Glossary:
                     accumulator[key] = 0
                 accumulator[key] += how_much
             def tally_defs():
-                x = {}
+                equivs = {}
+                root = {}
+                pos = {}
                 for entry in self.entries:
-                    increment(x, "defs", len(entry.defn.equivs))
-                    increment(x, entry.pos)
+                    increment(root, "unique meanings", len(entry.defn.equivs))
+                    increment(pos, entry.pos)
                     for equiv in entry.defn.equivs:
-                        kind = equiv.kind
-                        if not kind:
-                            kind = "exact equiv"
-                        increment(x, kind)
-                return x
+                        kind = equiv.kind if equiv.kind else "simple equiv"
+                        increment(equivs, kind)
+                root["pos"] = pos
+                root["meanings"] = equivs
+                root["unique pos"] = len(pos.keys())
+                return root
             self._stats = tally_defs()
-            self._stats["entries"] = len(self.entries)
+            self._stats["unique entries"] = len(self.entries)
         return self._stats
     
     @property
-    def lexeme_count(self):
+    def lemma_count(self):
         return len(self.entries)
 
     @staticmethod
@@ -265,7 +268,7 @@ class Glossary:
                     pre = False
                 except Exception as ex:
                     entry = False
-                    if g.lexeme_count:
+                    if g.lemma_count:
                         pre = False
                 if e:
                     if _is_header(e):
@@ -324,15 +327,15 @@ class Glossary:
         hits = []
         s_expr = expr if isinstance(expr, SearchExpr) else SearchExpr(expr)
         initial_search = s_expr.starter
-        index = bisect.bisect_left(self.entries, initial_search, key=lambda x: x.lexeme) \
+        index = bisect.bisect_left(self.entries, initial_search, key=lambda x: x.lemma) \
             if initial_search else 0
-        while index < self.lexeme_count and max_hits != 0:
+        while index < self.lemma_count and max_hits != 0:
             entry = self.entries[index]
             if s_expr.matches(entry):
                 if not exclude or (entry not in exclude):
                     hits.append(entry)
                     max_hits -= 1
-            elif initial_search and entry.lexeme > s_expr.starter:
+            elif initial_search and entry.lemma > s_expr.starter:
                 break
             index += 1
         # Now that we've found hits that start with expr, look
@@ -347,7 +350,7 @@ class Glossary:
         return hits
     
     def insert(self, entry: Entry):
-        index = bisect.bisect_left(self.entries, entry.lexeme, key=lambda x: x.lexeme)
+        index = bisect.bisect_left(self.entries, entry.lemma, key=lambda x: x.lemma)
         self.entries.insert(index, entry)
         self._unsaved = True
         self._stats = None

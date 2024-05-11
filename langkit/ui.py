@@ -15,6 +15,8 @@ LEX_COLOR = 'yellow'
 POS_COLOR = 'red'
 NOTE_COLOR = 'green'
 EQUIV_COLOR = 'blue'
+OPTION_COLOR = 'cyan'
+CMD_COLOR = 'yellow'
 
 def get_verbose():
     global verbose
@@ -61,39 +63,55 @@ def get_terminal_size(force: bool = False):
     now = time.time()
     if force or (now - _last_termsize_check > 10):
         _last_sizex, _last_sizey = _calc_terminal_size()
+        _last_termsize_check = now
     return _last_sizex, _last_sizey
     
-def wrap_line_with_indent(text: str, width=None):
+def wrap_line_with_indent(text: str, width: int=None, indent: str=None, first_width=None):
     """
     Wraps a single line of text to fit within the specified width,
-    using the indentation of the first line as the indentation for
-    subsequent lines.
+    using either a specified indent string, or the indentation of
+    the first line as a model.
 
     Args:
         text (str): The text to be wrapped.
         width (int): The maximum width of each line.
-
+        indent (str): A string prefixed to each line after the first. If
+            not given, the indent of the first line is used as a model.
+        first_width (int): The width of the first line. This can model
+            hanging indents or deeper indents on the first line, and can
+            be helpful if the first line needs to end early because it
+            is preceded by something not analyzed in the wrapping. If
+            not specified, width is used for the first line as well. If
+            this value is negative, first_width is subtracted from with,
+            giving a relatively smaller first line.
     Returns:
         str: The wrapped text with indentation.
     """
     if width is None:
         width, _ = get_terminal_size()
+    current_width = first_width if first_width else width
+    if current_width < 0: current_width = width + current_width
     lines = []
+    # Remove trailing spaces so they won't confuse our calculations.
     text = text.rstrip()
     if text:
-        for i in range(len(text)):
-            if text[i] != ' ':
-                break
-        indent = ' ' * i if i > 0 else ''
-        while len(text) > width:
-            space_index = text.rfind(' ', len(indent) + 1, width)
+        if indent is None:
+            for i in range(len(text)):
+                if text[i] != ' ':
+                    break
+            indent = ' ' * i if i > 0 else ''
+        while len(text) > current_width:
+            space_index = text.rfind(' ', len(indent) + 1, current_width)
             if space_index == -1:
                 # If no space found within width, just split at width
-                lines.append(text[:width])
-                text = indent + text[width:]
+                lines.append(text[:current_width])
+                text = indent + text[current_width:]
             else:
                 lines.append(text[:space_index].rstrip())
                 text = indent + text[space_index + 1:]
+            # If we were using a different width for the first line,
+            # switch to the width for all remaining lines.
+            current_width = width
         lines.append(text)
     return '\n'.join(lines)
 
