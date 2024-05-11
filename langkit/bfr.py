@@ -201,6 +201,13 @@ def find_regular(pairs, irregular):
         found = pairs[index]
         if found[0] == irregular:
             return found[1]
+        
+def likely_silent_e(verb_root):
+    if len(verb_root) >= 3:
+        if verb_root[-1] not in vowels:
+            if verb_root[-2] in vowels:
+                return verb_root[-3] not in vowels
+    return False
 
 def bfr(word, pos):
     """
@@ -213,15 +220,16 @@ def bfr(word, pos):
     if pos == 'VBD': # verb past tense: gave, walked
         regular = find_regular(irregular_past, word)
         if regular: return (regular, 'v')
-        if word.endswith('ed'): return (word[:-2], 'v')
+        if word.endswith('ed'):
+            cutoff = -1 if likely_silent_e(word[:-2]) else -2 
+            return (word[:cutoff], 'v')
     elif pos == 'VBG': # verb gerund/present participle: walking
         if word.endswith('ing'):
             word = word[:-3]
             # Undo doubled consonants if present (e.g., swimming, hitting)
             if word[-1] == word[-2]: return (word[:-1], 'v')
             # Add silent e in places where it likely belongs.
-            if len(word) >= 3 and word[-1] not in vowels and word[-2] in vowels and word[-3] not in vowels:
-                return (word + 'e', 'v')
+            if likely_silent_e(word): return (word + 'e', 'v')
             return (word, 'v')
     elif pos == 'VBN': # verb past participle: given, walked
         regular = find_regular(irregular_past_parts, word)

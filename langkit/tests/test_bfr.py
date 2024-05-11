@@ -8,7 +8,7 @@ def test_bfr():
     assert bfr('walked', 'VBN') == ('walk', 'v')
     assert bfr('running', 'VBG') == ('run', 'v')
     assert bfr('smiling', 'VBG') == ('smile', 'v')
-    assert bfr('baked', 'VBD') == ('bak', 'v')
+    assert bfr('baked', 'VBD') == ('bake', 'v')
     assert bfr('abruptly', 'RB') == ('abrupt', 'ad')
     assert bfr('bigger', 'JJR') == ('big', 'ad')
     assert bfr('highest', 'JJS') == ('high', 'ad')
