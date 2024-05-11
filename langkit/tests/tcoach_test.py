@@ -9,7 +9,7 @@ class FakeGlossary:
                 return [item]
             
 glossary = FakeGlossary([
-    "p:deixis d:this",
+    "p:det d:this",
     "p:v d:be",
     "p:quant d:a",
     "p:n d:test",
@@ -37,13 +37,13 @@ def test_hints():
                     found = result
                     break
             assert ex in found
-    assert_hints("this is a test", 'p:deixis d:this', 'INSERTED', 'd:be', 'p:quant d:a', 'p:n d:test')
+    assert_hints("this is a test", 'p:det d:this', 'INSERTED', 'd:be', 'p:quant d:a', 'p:n d:test')
 
 def test_bfr():
     assert bfr('are', 'VBP') == ('be', 'v')
     assert bfr('am', 'VBP') == ('be', 'v')
     assert bfr('is', 'VBZ') == ('be', 'v')
-    assert bfr('taken', 'VBN') == ('tak', 'v')
+    assert bfr('taken', 'VBN') == ('take', 'v')
     assert bfr('walked', 'VBN') == ('walk', 'v')
     assert bfr('running', 'VBG') == ('run', 'v')
     assert bfr('smiling', 'VBG') == ('smil', 'v')

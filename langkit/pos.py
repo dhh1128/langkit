@@ -7,7 +7,7 @@ def pos(nltk, descrip, lk): return PartOfSpeech(nltk, descrip, lk)
 INVENTORY = [
     pos('CC', 'coordinating conjunction', 'conj'),
     pos('CD', 'cardinal digit', ''),
-    pos('DT', 'determiner', 'quant deixis'),
+    pos('DT', 'determiner', 'quant det'),
     pos('EX', 'existential there', ''),
     pos('FW', 'foreign word', ''),
     pos('IN', 'preposition/subordinating conjunction', 'prep'),

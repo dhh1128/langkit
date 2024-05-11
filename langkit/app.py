@@ -24,19 +24,24 @@ def match_command(which):
     for name, func in PLUGINS.items():
         if name == which:
             return func
-    sys.stderr.write("\nCan't find command '%s'.\n" % which)
-    return help.cmd
 
 def main(argv = None):
     if not argv:
         argv = sys.argv
-    show_help = len(argv) < 3
+
+    # Record verbose flag and remove it, if present.
+    if len(argv) > 1 and argv[1] == '-v':
+        set_verbose(True)
+        argv = argv[1:]
+
+    show_help = len(argv) < 2
     if not show_help:
         try:
             if not os.path.isdir(argv[1]):
                 print("First argument must be a folder that contains a language.")
                 show_help = True
             lang = Lang(argv[1])
+            if len(argv) == 2: argv.append("repl")
             cmd = match_command(argv[2])
             if cmd:
                 cmd(lang, *argv[3:])

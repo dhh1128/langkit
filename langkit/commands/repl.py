@@ -4,6 +4,8 @@ import traceback
 
 from ..ui import *
 from ..glossary import Entry, Defn, Glossary
+from ..tcoach import *
+
 
 def find(ctx, expr, try_fuzzy=True):
     ctx.last_find_expr = expr
@@ -143,6 +145,8 @@ edit [number or lemma] - edit a glossary entry
 
 del [number or lemma] - delete a glossary entry
 
+trans [fname or sentence] - provide coaching on possible translations of text
+
 scan [sd:scan directory] [sfp:scan filename pattern] regex - scan files for text
 
 stats
@@ -271,11 +275,54 @@ def get_entry_from_args(ctx, args):
     except: pass
     cprint(f"{which}: no such entry.", ERROR_COLOR)
 
+def give_hints(coach, text):
+    verbose = get_verbose()
+    column = 1
+    width = get_terminal_size()[0]
+    for hint in coach.hints(text):
+        if verbose:
+            out = repr(hint) + ' '
+        else:
+            out = hint.lemma if hint.lemma else str(hint)
+            if column + len(out) >= width:
+                print()
+                column = 1
+            if column > 1:
+                write(' ')
+                column += 1
+        if hint.lemma and not verbose:
+            color = EQUIV_COLOR if hint.approx else LEX_COLOR
+            cwrite(out, color)
+        else:
+            write(out)
+        column += len(out)
+    print('')
+
+def trans(ctx, args):
+    if ctx.tcoach is None:
+        ctx.tcoach = TranslationCoach(ctx.lang.glossary, ctx.lang.advise_func)
+    coach = ctx.tcoach
+    if not args:
+        while True:
+            try:
+                text = prompt("Source text? >")
+            except KeyboardInterrupt:
+                print()
+                return
+            give_hints(coach, text)
+    elif len(args) == 1 and os.path.isfile(args[0]):
+        with open(args[0], 'r') as f:
+            text = f.read()
+        give_hints(coach, text)
+    else:
+        text = ' '.join(args)
+        give_hints(coach, text)
+
 SHORT_ENTRY_CMD_PAT = re.compile(r'^([ed])(\d+)$')
 
 def cmd(lang, *args):
     """
-    - work with glossary
+    - run interactive commands in a REPL loop
     """
 
     # Define a REPL context that we can pass to our helper functions.
@@ -287,10 +334,14 @@ def cmd(lang, *args):
     ctx.scan_fname_pat = re.compile(r'.*\.(md|html?|txt)$', re.I)
     ctx.scan_settings_reported = False
     ctx.last_find = None
+    ctx.tcoach = None
 
+    # Show some stuff to orient user.
     show_stats(ctx)
     print()
     show_help()
+
+    # REPL
     while True:
         args = prompt('\n>').strip().split()
         if args:
@@ -319,8 +370,10 @@ def cmd(lang, *args):
                 if entry: delete(ctx, entry)
             elif cmd_is("stats"):
                 show_stats(ctx)
+            elif cmd_is("trans"):
+                trans(ctx, args[1:])
             elif cmd_is("thesaurus"):
-                thesaurus(args[1])
+                thesaurus(args[1:])
             elif cmd_is("quit"):
                 break
             else:
