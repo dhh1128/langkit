@@ -16,6 +16,8 @@ SimpleNormalizationRule = namedtuple('SimpleNormalizationRule', ['pattern', 'rep
 SimpleNormalizationRule.apply = lambda self, text: text.replace(self.pattern, self.replacement)
 def snr(pattern, replacement): return SimpleNormalizationRule(pattern, replacement)
 
+DEBUG = False
+
 rewrite_rules = [
     snr('’', "'"),
     snr('“', '"'),
@@ -104,8 +106,8 @@ class TranslationCoach:
                 # punctuation itself. If we find these tokens, then the lemma
                 # (the term the glossary would produce) is just the same as the
                 # token, and no further processing is needed. Do the same short
-                # circuit for cardinal numbers.
-                if not pos[0].isalpha() or pos == 'CD':
+                # circuit for cardinal numbers and proper nouns.
+                if not pos[0].isalpha() or pos in ['CD', 'NNP', 'NNPS']:
                    lemma = word
                 else:
                     # Normalize case; glossary should have lower-case form of word.
@@ -120,10 +122,10 @@ class TranslationCoach:
                         # until we find a match.
                         for x in lk_pos.lk.split():
                             expr = f'p:{x} d:{word}'
-                            print(expr)
+                            if DEBUG: print(expr)
                             entry = self._find(expr)
                             if entry:
-                                print("found")
+                                if DEBUG: print("found")
                                 pos = x
                                 break
                     if not entry:
@@ -135,7 +137,7 @@ class TranslationCoach:
                             bfr_word, new_pos = bfr(word, tag[1])
                             if bfr_word:
                                 expr = f'p:{new_pos} d:{bfr_word}'
-                                print(expr)
+                                if DEBUG: print(expr)
                                 entry = self._find(expr)
                                 if entry:
                                     pos = new_pos

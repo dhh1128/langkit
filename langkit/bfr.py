@@ -3,6 +3,7 @@ import bisect
 irregular_past_parts = [
     ("awoken", "awake"),
     ("been", "be"),
+    ("begotten", "beget"),
     ("begun", "begin"),
     ("bent", "bend"),
     ("bitten", "bite"),
@@ -52,6 +53,7 @@ irregular_past_parts = [
     ("shorn", "shear"),
     ("shot", "shoot"),
     ("shown", "show"),
+    ("slain", "slay"),
     ("slept", "sleep"),
     ("slid", "slide"),
     ("smelt", "smell"),
@@ -88,6 +90,7 @@ irregular_past_parts = [
 irregular_past = [
     ("ate", "eat"),
     ("began", "begin"),
+    ("begat", "beget"),
     ("bit", "bite"),
     ("bought", "buy"),
     ("broke", "break"),
@@ -153,6 +156,7 @@ irregular_past = [
     ("showed", "show"),
     ("shut", "shut"),
     ("slept", "sleep"),
+    ("slew", "slay"),
     ("slid", "slide"),
     ("smelt", "smell"),
     ("sold", "sell"),
@@ -202,14 +206,15 @@ def find_regular(pairs, irregular):
         
 
 vowels = "aeiou"
-two_vowels_plus_cons_with_silent_e = ['iev', 'eiv', 'eas', 'aus', 'uad']
+two_vowels_plus_cons_with_silent_e = ['iev', 'eiv', 'eas', 'aus', 'uad', 'iat']
 
 def likely_silent_e(verb_root):
     if len(verb_root) >= 3:
         if verb_root[-1] not in vowels:
+            if verb_root[-2:] == "nc": return True
             if verb_root[-2] in vowels:
                 if verb_root[-3:] in two_vowels_plus_cons_with_silent_e:
-                    return True
+                    return True                
                 return verb_root[-3] not in vowels
     return False
 
@@ -238,7 +243,9 @@ def bfr(word, pos):
     elif pos == 'VBN': # verb past participle: given, walked
         regular = find_regular(irregular_past_parts, word)
         if regular: return (regular, 'v')
-        if word.endswith('ed'): return (word[:-2], 'v')
+        if word.endswith('ed'): 
+            cutoff = -1 if likely_silent_e(word[:-2]) else -2 
+            return (word[:cutoff], 'v')
     elif pos == 'VBP': # verb non-3rd person singular present: walk
         if word in ['are', 'am']: return ('be', 'v')
     elif pos == 'VBZ': # verb 3rd person singular present: walks
