@@ -193,8 +193,6 @@ irregular_past = [
     ("wrung", "wring"),
 ]
 
-vowels = "aeiou"
-
 def find_regular(pairs, irregular):
     index = bisect.bisect_left(pairs, (irregular, ""))
     if index != len(pairs):
@@ -202,10 +200,16 @@ def find_regular(pairs, irregular):
         if found[0] == irregular:
             return found[1]
         
+
+vowels = "aeiou"
+two_vowels_plus_cons_with_silent_e = ['iev', 'eiv', 'eas', 'aus', 'uad']
+
 def likely_silent_e(verb_root):
     if len(verb_root) >= 3:
         if verb_root[-1] not in vowels:
             if verb_root[-2] in vowels:
+                if verb_root[-3:] in two_vowels_plus_cons_with_silent_e:
+                    return True
                 return verb_root[-3] not in vowels
     return False
 

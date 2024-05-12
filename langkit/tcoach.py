@@ -120,8 +120,10 @@ class TranslationCoach:
                         # until we find a match.
                         for x in lk_pos.lk.split():
                             expr = f'p:{x} d:{word}'
+                            print(expr)
                             entry = self._find(expr)
                             if entry:
+                                print("found")
                                 pos = x
                                 break
                     if not entry:
@@ -133,6 +135,7 @@ class TranslationCoach:
                             bfr_word, new_pos = bfr(word, tag[1])
                             if bfr_word:
                                 expr = f'p:{new_pos} d:{bfr_word}'
+                                print(expr)
                                 entry = self._find(expr)
                                 if entry:
                                     pos = new_pos
