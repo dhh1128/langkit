@@ -6,7 +6,7 @@ a paragraph of text
 
 ## Glossary
 
-lemma | pos | definition | notes
+lemma | tags | definition | notes
 --- | --- | --- | ---
 apple|n|a red fruit / >jonathan
 banana|n|a yellow fruit

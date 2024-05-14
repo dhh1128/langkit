@@ -9,7 +9,7 @@ EXPLAINED_EQUIV = ':'
 EXACT_EQUIV = ''
 EQUIV_CHARS = NARROWER_EQUIV + BROADER_EQUIV + ROUGH_EQUIV + EXPLAINED_EQUIV
 EQUIVS_PAT = re.compile(r'\s*([' + EQUIV_CHARS + r'])?(.+?)(/|$)')
-COLUMNS = ['lemma', 'pos', 'definition', 'notes']
+COLUMNS = ['lemma', 'tags', 'definition', 'notes']
 COLUMN_COUNT = len(COLUMNS)
 COLUMN_SEP = ' | '
 HEADER = COLUMN_SEP.join(COLUMNS)
@@ -83,7 +83,7 @@ class Entry:
         if isinstance(fields, str):
             fields = [f.strip() for f in fields.split('|')]
         self.lemma = fields[0]
-        self.pos = fields[1]
+        self.tags = fields[1].split()
         self.defn = Defn(fields[2])
         if len(fields) > 3 and fields[3]:
             self.notes = fields[3]
@@ -95,7 +95,7 @@ class Entry:
 
     def __str__(self):
         suffix = '' if self.notes is None else COLUMN_SEP + self.notes 
-        return self.lemma + COLUMN_SEP + self.pos + COLUMN_SEP + str(self.defn) + suffix
+        return self.lemma + COLUMN_SEP + ' '.join(sorted(self.tags)) + COLUMN_SEP + str(self.defn) + suffix
     
 def _is_header(entry: Entry) -> bool:
     return entry.lemma == COLUMNS[0]
@@ -133,7 +133,7 @@ class MatchExpr:
     def matches(self, txt) -> bool:
         return self._regex.match(txt) if self._regex else (self.expr == txt)
 
-SCOPED_SEARCH_EXPR = re.compile(r'(?:^|\s)(l(?:e(?:m(?:m(?:a)?)?)?)?|p(?:o(?:s)?)?|d(?:e(?:f(?:n)?)?)?|n(?:o(?:t(?:e(?:s)?)?)?)?):')
+SCOPED_SEARCH_EXPR = re.compile(r'(?:^|\s)(l(?:e(?:m(?:m(?:a)?)?)?)?|t(?:a(?:g(?:s)?)?)?|d(?:e(?:f(?:n)?)?)?|n(?:o(?:t(?:e(?:s)?)?)?)?):')
 class SearchExpr:
     def __init__(self, expr):
         criteria = []
@@ -164,7 +164,7 @@ class SearchExpr:
         changed = False
         for i in range(len(self.criteria)):
             field = self.criteria[i][0]
-            if field != 'p':
+            if field != 't':
                 matcher = self.criteria[i][1]
                 expr = matcher.expr
                 if matcher.first_wildcard != 0:
@@ -189,24 +189,32 @@ class SearchExpr:
         
     def matches(self, entry: Entry) -> bool:
         for field_selector, match_expr in self.criteria:
+            possibilities = 2 if field_selector == 'x' else 1
             # First look in the simple fields.
-            match_count = 2 if field_selector == 'x' else 1
             text = None
             if field_selector in 'lx': text = entry.lemma
-            elif field_selector == 'p': text = entry.pos
             elif field_selector == 'n': text = entry.notes
             if text and not match_expr.matches(text):
-                match_count -= 1
+                possibilities -= 1
+            # Now look in tags, which might be multiple.
+            if field_selector == 't':
+                found = False
+                for tag in entry.tags:
+                    if match_expr.matches(tag):
+                        found = True
+                        break
+                if not found:
+                    possibilities -= 1
             # Now look in the definition, which has subfields.
-            if match_count and (field_selector in 'dx'):
+            if possibilities and (field_selector in 'dx'):
                 found = False
                 for defn_item in entry.defn.equivs:
                     if match_expr.matches(defn_item.value):
                         found = True
                         break
                 if not found:
-                    match_count -= 1
-            if match_count < 1: return False
+                    possibilities -= 1
+            if possibilities < 1: return False
         return True
 
 class Glossary:
@@ -228,16 +236,16 @@ class Glossary:
             def tally_defs():
                 equivs = {}
                 root = {}
-                pos = {}
+                tags = {}
                 for entry in self.entries:
                     increment(root, "unique meanings", len(entry.defn.equivs))
-                    increment(pos, entry.pos)
+                    increment(tags, entry.pos)
                     for equiv in entry.defn.equivs:
                         kind = equiv.kind if equiv.kind else "simple equiv"
                         increment(equivs, kind)
-                root["pos"] = pos
+                root["tags"] = tags
                 root["meanings"] = equivs
-                root["unique pos"] = len(pos.keys())
+                root["unique tags"] = len(tags.keys())
                 return root
             self._stats = tally_defs()
             self._stats["unique entries"] = len(self.entries)
