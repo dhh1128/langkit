@@ -17,7 +17,7 @@ def show_entry(e, num=None):
         write(". ")
     cwrite(e.lemma, LEX_COLOR)
     write(" (")
-    cwrite(e.pos, POS_COLOR)
+    cwrite(' '.join(e.tags), TAG_COLOR)
     write(")")
     for equiv in e.defn.equivs:
         cwrite('\n   * ', EQUIV_COLOR)
@@ -183,7 +183,7 @@ def show_stats(ctx):
                 print(f": x{detail[item]}")
     print()
     write_section("entries", LEX_COLOR)
-    write_section("pos", POS_COLOR)
+    write_section("tags", TAG_COLOR)
     write_section("meanings", EQUIV_COLOR)
 
 def thesaurus(word):

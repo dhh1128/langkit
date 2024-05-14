@@ -239,7 +239,8 @@ class Glossary:
                 tags = {}
                 for entry in self.entries:
                     increment(root, "unique meanings", len(entry.defn.equivs))
-                    increment(tags, entry.pos)
+                    for tag in entry.tags:
+                        increment(tags, tag)
                     for equiv in entry.defn.equivs:
                         kind = equiv.kind if equiv.kind else "simple equiv"
                         increment(equivs, kind)
