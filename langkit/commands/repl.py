@@ -38,8 +38,10 @@ def show_hits(ctx, which=None, with_number=True):
         return True
 
 def delete(ctx, entry):
-    ctx.lang.glossary.entries.remove(entry)
-    ctx.lang.glossary._stats = None
+    g = ctx.lang.glossary
+    g.entries.remove(entry)
+    g._stats = None
+    g.save()
     print(f"Deleted {entry.lemma}.")
 
 def edit(ctx, entry):
