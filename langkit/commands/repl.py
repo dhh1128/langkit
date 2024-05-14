@@ -41,7 +41,7 @@ def delete(ctx, entry):
     g = ctx.lang.glossary
     g.entries.remove(entry)
     g._stats = None
-    g.save()
+    g.save(force=True)
     print(f"Deleted {entry.lemma}.")
 
 def edit(ctx, entry):
