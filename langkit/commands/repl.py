@@ -101,22 +101,22 @@ def add(ctx, args):
     g = ctx.lang.glossary
     entry = None
     try:
-        lex = arg_else_prompt(args, 0, "   lex")
-        if lex:
-            redundant = g.find(f'l:{lex}!')
+        lemma = arg_else_prompt(args, 0, "   lex")
+        if lemma:
+            redundant = g.find(f'l:{lemma}!')
             if redundant:
                 show_hits(ctx, redundant, with_number=False)
                 if warn_confirm("Similar words exist. Continue?"):
                     redundant = None
             if not redundant:
-                pos = arg_else_prompt(args, 1, "   pos")
-                if pos:
+                tags = arg_else_prompt(args, 1, "   tags")
+                if tags:
                     defn = arg_else_prompt(args, 2, "   defn")
                     if defn:
                         # If the item has a part of speech that doesn't typically
                         # get inflected, then when we look up synonyms, look
                         # only for ones with the same part of speech.
-                        pos_criterion = '' if pos[0] in 'nva' else f"p:{pos} "
+                        pos_criterion = '' if tags[0] in 'nva' else f"p:{tags} "
                         redundant = g.find(f'{pos_criterion}d:*!{defn}')
                         if redundant:
                             show_hits(ctx, redundant, with_number=False)
@@ -124,7 +124,7 @@ def add(ctx, args):
                                 redundant = None
                         if not redundant:
                             notes = arg_else_prompt(args, 3, "   notes")
-                            entry = Entry((lex, pos, defn, notes))
+                            entry = Entry((lemma, tags, defn, notes))
     except KeyboardInterrupt:
         pass
     print()
