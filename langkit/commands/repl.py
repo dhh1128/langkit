@@ -116,7 +116,7 @@ def add(ctx, args):
                         # If the item has a part of speech that doesn't typically
                         # get inflected, then when we look up synonyms, look
                         # only for ones with the same part of speech.
-                        pos_criterion = '' if tags[0] in 'nva' else f"p:{tags} "
+                        pos_criterion = '' if tags[0] in 'nva' else f"t:{tags} "
                         redundant = g.find(f'{pos_criterion}d:*!{defn}')
                         if redundant:
                             show_hits(ctx, redundant, with_number=False)
