@@ -83,7 +83,7 @@ class Entry:
         if isinstance(fields, str):
             fields = [f.strip() for f in fields.split('|')]
         self.lemma = fields[0]
-        self.tags = fields[1].split()
+        self.tags = fields[1].split() if isinstance(fields[1], str) else fields[1] 
         self.defn = Defn(fields[2])
         if len(fields) > 3 and fields[3]:
             self.notes = fields[3]

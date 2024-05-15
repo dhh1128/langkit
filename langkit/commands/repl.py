@@ -61,8 +61,8 @@ def edit(ctx, entry):
             # to maintain proper sort order.
             g.entries.remove(entry)
             g.insert(entry)
-        new = prompt_options(f"   pos: {entry.pos}")
-        if new: changed = entry.pos = new
+        new = prompt_options(f"   tags: {' '.join(entry.tags)}")
+        if new: changed = entry.tags = new.split()
         new = prompt_options(f"   defn: {entry.defn} (/ to append)")
         if new:
             if new.startswith('/'):
