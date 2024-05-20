@@ -16,13 +16,13 @@ Phonemic transcriptions, which give rough approximations without worrying about 
 Phonetic transcriptions, which provide more detail on a specific pronunciation, are shown between square brackets [...]. IPA is used between the brackets. For example, the detailed phonetic transcription of "cat" might be [kʰæt], indicating the aspiration of the initial /k/.
 
 ## Glosses
-Glosses, which provide the meaning of a word, phrase, or sentence in L2, directly follow the word or phrase that they explain. They are enclosed in single quotes. For example, text discussing a conversation about pets overhead in Madrid might say:
+Glosses, which provide the meaning of a word, phrase, or sentence in L2, directly follow the word or phrase that they explain. They are enclosed in single quotes and may be preceded by an em dash for clarity. For example, text discussing a conversation about pets overhead in Madrid might say:
 
-&nbsp;&nbsp;&nbsp;&nbsp;I heard her say *gato* 'cat'.
+&nbsp;&nbsp;&nbsp;&nbsp;I heard her say *gato* &mdash; 'cat'.
 
 This same technique can be used with full sentences:
 
-&nbsp;&nbsp;&nbsp;&nbsp;*El gato está en la casa* 'The cat is in the house'.
+&nbsp;&nbsp;&nbsp;&nbsp;*El gato está en la casa* &mdash; 'The cat is in the house'.
    
 ## Interlinear glossed text (IGT)
 For more complex examples, linguists use interlinear glossing. This method provides a word-for-word or morpheme-by-morpheme translation aligned vertically:
