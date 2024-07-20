@@ -198,6 +198,7 @@ def scan(ctx, args):
         rest = args[0][i+1:]
         if prefix.lower() == 'sd':
             ctx.scan_dirs = [os.path.abspath(x) for x in rest.split(';')]
+            print(f"Scanning directories: {ctx.scan_dirs}")
             ctx.scan_settings_reported = False
             del args[0]
             for item in ctx.scan_dirs:
@@ -341,7 +342,7 @@ def cmd(lang, *args):
     ctx = ReplContext
     ctx.lang = lang
     ctx.hits = []
-    ctx.scan_dirs = os.path.abspath('.')
+    ctx.scan_dirs = [os.path.abspath('.')]
     ctx.scan_fname_pat = re.compile(r'.*\.(md|html?|txt)$', re.I)
     ctx.scan_settings_reported = False
     ctx.last_find = None
