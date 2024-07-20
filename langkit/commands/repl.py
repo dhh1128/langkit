@@ -197,13 +197,12 @@ def scan(ctx, args):
         prefix = args[0][:i]
         rest = args[0][i+1:]
         if prefix.lower() == 'sd':
-            if os.path.isdir(rest):
-                ctx.scan_dir = os.path.abspath(rest)
-                ctx.scan_settings_reported = False
-                del args[0]
-            else:
-                cprint(f"{rest} is not a valid directory to scan.", ERROR_COLOR)
-                return
+            ctx.scan_dirs = [os.path.abspath(x) for x in rest.split(';')]
+            ctx.scan_settings_reported = False
+            del args[0]
+            for item in ctx.scan_dirs:
+                if not os.path.exists(item):
+                    cprint(f"{item} is not a valid directory to scan.", ERROR_COLOR)
         elif prefix.lower() == 'sfp':
             try: 
                 ctx.scan_fname_pat = re.compile(rest, re.I)
@@ -215,7 +214,8 @@ def scan(ctx, args):
     
     if not ctx.scan_settings_reported:
         print()
-        print(wrap_line_with_indent(f'Scanning files with names like "{ctx.scan_fname_pat.pattern}" within {ctx.scan_dir}.'))
+        dirlist = "\n  ".join(ctx.scan_dirs)
+        print(f'Scanning files with names like:\n  "{ctx.scan_fname_pat.pattern}"\nwithin:\n  {dirlist}.')
         ctx.scan_settings_reported = True
 
     if args:
@@ -227,37 +227,39 @@ def scan(ctx, args):
             return
         match_count = 0
         file_count = 0
-        for folder, dirnames, file_names in os.walk(ctx.scan_dir):
-            # Skip hidden folders.
-            dirnames[:] = [d for d in dirnames if d[0] not in '._']
-            for fname in file_names:
-                if ctx.scan_fname_pat.match(fname):
-                    file_count += 1
-                    file_path = os.path.join(folder, fname)
-                    printed_file_path = False
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            # Read each line in the file
-                            for line_number, line in enumerate(f, start=1):
-                                # Search for the pattern in the line
-                                line = line.strip()
-                                if regex.search(line):
-                                    match_count += 1
-                                    if not printed_file_path:
-                                        print()
-                                        cprint(os.path.relpath(file_path, ctx.scan_dir), OPTION_COLOR)
-                                        printed_file_path = True
-                                    print(f"  line {line_number}:")
-                                    text = wrap_line_with_indent("    " + line)
-                                    # Re-find the match
-                                    m = regex.search(text)
-                                    # Print the match with highlight
-                                    write(text[:m.start()])
-                                    cwrite(text[m.start():m.end()], LEX_COLOR)
-                                    print(text[m.end():])
-                    except Exception as e:
-                        traceback.print_exc()
-                        cprint(f"Error scanning '{file_path}': {e}", ERROR_COLOR)
+        for scan_dir in ctx.scan_dirs:
+            if not os.path.isdir(scan_dir): continue
+            for folder, dirnames, file_names in os.walk(scan_dir):
+                # Skip hidden folders.
+                dirnames[:] = [d for d in dirnames if d[0] not in '._']
+                for fname in file_names:
+                    if ctx.scan_fname_pat.match(fname):
+                        file_count += 1
+                        file_path = os.path.join(folder, fname)
+                        printed_file_path = False
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                # Read each line in the file
+                                for line_number, line in enumerate(f, start=1):
+                                    # Search for the pattern in the line
+                                    line = line.strip()
+                                    if regex.search(line):
+                                        match_count += 1
+                                        if not printed_file_path:
+                                            print()
+                                            cprint(os.path.relpath(file_path, scan_dir), OPTION_COLOR)
+                                            printed_file_path = True
+                                        print(f"  line {line_number}:")
+                                        text = wrap_line_with_indent("    " + line)
+                                        # Re-find the match
+                                        m = regex.search(text)
+                                        # Print the match with highlight
+                                        write(text[:m.start()])
+                                        cwrite(text[m.start():m.end()], LEX_COLOR)
+                                        print(text[m.end():])
+                        except Exception as e:
+                            traceback.print_exc()
+                            cprint(f"Error scanning '{file_path}': {e}", ERROR_COLOR)
         print(f"\nFound {match_count} matches in {file_count} files.")
 
 def get_entry_from_args(ctx, args):
@@ -339,7 +341,7 @@ def cmd(lang, *args):
     ctx = ReplContext
     ctx.lang = lang
     ctx.hits = []
-    ctx.scan_dir = os.path.abspath('.')
+    ctx.scan_dirs = os.path.abspath('.')
     ctx.scan_fname_pat = re.compile(r'.*\.(md|html?|txt)$', re.I)
     ctx.scan_settings_reported = False
     ctx.last_find = None
